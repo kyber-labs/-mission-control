@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Mission Control</title>
+<style>
+:root{
+  --bg:#0a0a0b; --card:#131316; --border:#26262b; --text:#e8e8ea; --muted:#8b8b93;
+  --green:#34d399; --red:#ef4444; --yellow:#f59e0b; --blue:#38bdf8; --purple:#a855f7;
+  --radius:16px; --topbar-h:56px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+a{color:var(--blue)}
+#app{display:flex;min-height:100vh}
+/* ---------- Sidebar ---------- */
+#sidebar{width:250px;flex-shrink:0;background:#0d0d0f;border-right:1px solid var(--border);padding:20px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px;z-index:60}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 10px 18px;font-weight:700;letter-spacing:.14em;font-size:13px}
+.brand-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#3b3b42,#17171a);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px}
+.nav-btn{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:13.5px;cursor:pointer;text-align:left;transition:background .15s,color .15s}
+.nav-btn:hover{background:#17171b;color:var(--text)}
+.nav-btn.active{background:#1c1c21;color:var(--text);font-weight:600}
+.nav-ico{width:20px;text-align:center;font-size:15px}
+.nav-badge{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#2a2a31;color:var(--text);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.nav-badge.hot{background:#3a2b12;color:var(--yellow)}
+.side-foot{margin-top:auto;padding:12px 10px 4px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border)}
+#scrim{display:none}
+/* ---------- Main / topbar ---------- */
+#main{flex:1;min-width:0;display:flex;flex-direction:column}
+#topbar{height:var(--topbar-h);flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(10,10,11,.92);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
+#burger{display:none;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;width:36px;height:36px;cursor:pointer}
+.tb-title{font-weight:700;letter-spacing:.16em;font-size:13px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.conn{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.conn-dot{width:9px;height:9px;border-radius:50%;background:var(--yellow)}
+.conn.up .conn-dot{background:var(--green);box-shadow:0 0 8px rgba(52,211,153,.7)}
+.conn.down .conn-dot{background:var(--red)}
+.clock{font-size:13px;color:var(--muted)}
+#content{flex:1;padding:24px;max-width:1280px;width:100%;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+/* ---------- Generic UI ---------- */
+.h{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:10px;border:1px solid #33333a;background:transparent;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.btn:hover{background:#1c1c21;border-color:#44444c}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-primary{background:var(--text);color:#0a0a0b;border-color:var(--text)}
+.btn-primary:hover{background:#fff;border-color:#fff}
+.btn-danger-ghost{border-color:#4a2b2b;color:#f3b0b0}
+.btn-danger-ghost.armed{background:#3a1414;border-color:#7a2e2e;color:#ffb4b4}
+.pill{display:inline-flex;align-items:center;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.pill.working{background:rgba(56,189,248,.14);color:var(--blue);border:1px solid rgba(56,189,248,.35)}
+.pill.idle{background:#1c1c21;color:var(--muted);border:1px solid var(--border)}
+.pill.paused{background:rgba(245,158,11,.14);color:var(--yellow);border:1px solid rgba(245,158,11,.4)}
+.pill.on{background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.35)}
+.pill.off{background:#1c1c21;color:var(--muted);border:1px solid var(--border)}
+.pill.online{background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.35)}
+.pill.offline{background:rgba(239,68,68,.14);color:var(--red);border:1px solid rgba(239,68,68,.4)}
+.empty{padding:44px 20px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:var(--radius);background:var(--card)}
+.empty .big{font-size:30px;margin-bottom:10px}
+.empty-inline{color:var(--muted);font-size:13px;padding:6px 0}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.bar{height:8px;border-radius:5px;background:#222228;overflow:hidden;margin-top:8px}
+.bar-fill{height:100%;border-radius:5px;background:var(--blue);transition:width .5s}
+.bar-fill.danger{background:var(--red)}
+.bar-fill.warn{background:var(--yellow)}
+.code-block{background:#0d0d0f;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:#c9c9d1;white-space:pre-wrap;word-break:break-word;margin:12px 0}
+#toast{position:fixed;top:calc(var(--topbar-h) + 12px);right:16px;z-index:200;background:#1c1c21;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:10px;padding:12px 16px;font-size:13px;max-width:340px;display:none;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+/* ---------- Agent cards ---------- */
+.agent-card{display:flex;flex-direction:column;gap:12px}
+.agent-head{display:flex;align-items:center;gap:12px}
+.dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.agent-name{font-weight:700;font-size:15px}
+.agent-role{font-size:12.5px;color:var(--muted)}
+.agent-head .pill{margin-left:auto}
+.task-box{background:#0d0d0f;border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:58px}
+.task-title{font-weight:600;font-size:13.5px}
+.task-meta{font-size:11.5px;color:var(--muted);margin-top:4px}
+/* ---------- Queue ---------- */
+.q-item{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border)}
+.q-item:last-child{border-bottom:0}
+.q-num{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#1c1c21;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;color:var(--muted)}
+.q-prompt{flex:1;white-space:pre-wrap;word-break:break-word}
+.q-meta{font-size:11.5px;color:var(--muted);margin-top:6px}
+.q-form{display:flex;flex-direction:column;gap:12px}
+textarea,select,input[type=text]{background:#0d0d0f;border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 13px;font-size:13.5px;font-family:inherit;width:100%}
+textarea{min-height:96px;resize:vertical}
+textarea:focus,select:focus{outline:none;border-color:#4a4a55}
+.quick-row{display:flex;flex-wrap:wrap;gap:8px}
+.sec-title{font-size:15px;font-weight:700;margin:26px 0 12px}
+.sec-title:first-child{margin-top:0}
+/* ---------- Metrics / VPS ---------- */
+.metric-big{font-size:30px;font-weight:700;letter-spacing:-.01em}
+.metric-sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.metric-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid #1c1c20;font-size:13px}
+.metric-row:last-child{border-bottom:0}
+.metric-row .k{color:var(--muted)}
+.metric-row .v{font-weight:600}
+details.sys{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);padding:6px 18px;margin-top:14px}
+details.sys summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sched-item{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.sched-item:last-child{border-bottom:0}
+.sched-title{font-weight:600}
+.sched-meta{font-size:11.5px;color:var(--muted);margin-top:3px}
+.sched-next{font-size:12.5px;margin-top:6px;color:var(--text)}
+.sched-item .pill{margin-left:auto;flex-shrink:0}
+/* ---------- Token ---------- */
+.token-empty{text-align:center;max-width:560px;margin:0 auto;padding:48px 28px}
+.token-icon{font-size:44px;margin-bottom:14px;opacity:.85}
+.token-empty h3{margin:0 0 10px;font-size:17px}
+.token-empty p{color:var(--muted);margin:8px 0}
+/* ---------- Fleet ---------- */
+.cap-list{margin:10px 0 0;padding-left:18px;color:#c9c9d1;font-size:13px}
+.cap-list li{margin:4px 0}
+.visual-note{margin-top:12px;padding:10px 12px;background:#0d0d0f;border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--muted)}
+/* ---------- Log ---------- */
+.log-list{display:flex;flex-direction:column;gap:2px}
+.log-line{padding:8px 12px;background:#0d0d0f;border:1px solid #1a1a1f;border-radius:8px;font-size:12.5px;color:#c9c9d1;word-break:break-word}
+/* ---------- 3D office ---------- */
+#view-office{padding:0}
+#gl-wrap{position:relative;width:100%;height:calc(100vh - var(--topbar-h) - 48px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#060607}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+#office-hud{position:absolute;top:12px;left:12px;background:rgba(13,13,15,.82);border:1px solid var(--border);border-radius:10px;padding:8px 13px;font-size:12.5px;color:var(--muted);pointer-events:none;backdrop-filter:blur(6px)}
+#office-hud b{color:var(--text)}
+.office-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(13,13,15,.82);border:1px solid var(--border);border-radius:999px;padding:7px 16px;font-size:11.5px;color:var(--muted);pointer-events:none;white-space:nowrap;backdrop-filter:blur(6px)}
+.gl-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);padding:30px;text-align:center}
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  #sidebar{position:fixed;left:0;top:0;transform:translateX(-105%);transition:transform .25s ease;box-shadow:20px 0 60px rgba(0,0,0,.5)}
+  body.nav-open #sidebar{transform:translateX(0)}
+  body.nav-open #scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
+  #burger{display:flex;align-items:center;justify-content:center}
+  #content{padding:16px}
+  .clock{display:none}
+}
+@media (max-width:768px){
+  body.office-active{overflow:hidden}
+  body.office-active #content{padding:0;max-width:none}
+  body.office-active #gl-wrap{position:fixed;top:var(--topbar-h);left:0;width:100dvw;height:calc(100dvh - var(--topbar-h));border:0;border-radius:0;z-index:40}
+  .office-hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand"><span class="brand-mark">◈</span> MISSION CONTROL</div>
+    <nav id="nav"></nav>
+    <div class="side-foot">Poll tiap 3 detik · <span id="side-conn">menghubungkan…</span></div>
+  </aside>
+  <div id="scrim"></div>
+  <div id="main">
+    <header id="topbar">
+      <button id="burger" aria-label="Buka menu">☰</button>
+      <div class="tb-title">MISSION CONTROL</div>
+      <div class="tb-right">
+        <span id="conn" class="conn"><span class="conn-dot"></span><span id="conn-text">Menghubungkan…</span></span>
+        <span id="clock" class="clock mono">--:--:--</span>
+        <button id="dispatch-btn" class="btn btn-danger-ghost" onclick="toggleDispatch()">⏸ Pause</button>
+      </div>
+    </header>
+    <main id="content">
+      <section class="view active" id="view-office">
+        <div id="gl-wrap">
+          <canvas id="gl"></canvas>
+          <div id="office-hud">memuat…</div>
+          <div class="office-hint">Seret untuk memutar · scroll / cubit untuk zoom · klik robot untuk jeda / lanjut</div>
+        </div>
+      </section>
+      <section class="view" id="view-agents"></section>
+      <section class="view" id="view-queue"></section>
+      <section class="view" id="view-metrics"></section>
+      <section class="view" id="view-vps"></section>
+      <section class="view" id="view-schedules"></section>
+      <section class="view" id="view-token"></section>
+      <section class="view" id="view-fleet"></section>
+      <section class="view" id="view-log"></section>
+    </main>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="/vendor/three.min.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   MISSION CONTROL — frontend dashboard monitoring AI agent
+   ============================================================ */
+const $ = (s) => document.querySelector(s);
+
+function esc(s) {
+  return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+function fmtTime(ts) {
+  if (!ts) return "—";
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
+}
+function fmtDT(ts) {
+  if (!ts) return "—";
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
+}
+function loadingHTML() { return '<div class="empty"><div class="big">⏳</div>Memuat data dari server…</div>'; }
+
+/* ---------------- Roster (statis, sesuai konfigurasi) ---------------- */
+const ROSTER = [
+  { id: "Anca", role: "Project Manager / General", color: 0x38bdf8, css: "#38bdf8",
+    caps: ["Koordinasi & delegasi task antar-agent", "Monitoring progres dan status", "General purpose / serbaguna"],
+    visual: "Robot standar tanpa aksesori khusus — bodi abu-abu netral dengan aksen biru langit." },
+  { id: "Mu", role: "Graphic Designer", color: 0xa855f7, css: "#a855f7",
+    caps: ["Desain grafis & ilustrasi", "Komposisi visual & layout", "Aset gambar untuk konten"],
+    visual: "Baret ungu miring di kepala, stylus di tangan kanan, dan drawing tablet tipis di depannya." },
+  { id: "Cipu", role: "Video Editor", color: 0xef4444, css: "#ef4444",
+    caps: ["Editing & cutting video", "Color grading dasar", "Render & ekspor"],
+    visual: "Headphone di kepala dengan lampu indikator REC merah yang berkedip." },
+  { id: "Jaka", role: "QC Visual", color: 0x22d3ee, css: "#22d3ee",
+    caps: ["Quality control visual", "Review detail & ketelitian", "Verifikasi hasil akhir"],
+    visual: "Satu mata kamera besar (lensa silinder) di wajah — bukan dua mata biasa." },
+  { id: "Tono", role: "Riset", color: 0xf59e0b, css: "#f59e0b",
+    caps: ["Riset & pengumpulan informasi", "Analisis & sintesis temuan", "Laporan hasil riset"],
+    visual: "Kaca pembesar di tangan dan antena di kepala." },
+  { id: "Dani", role: "Coding", color: 0x34d399, css: "#34d399",
+    caps: ["Penulisan & perbaikan kode", "Debugging", "Implementasi fitur"],
+    visual: "Keyboard mini melayang di depan dengan tombol-tombol kecil." }
+];
+
+const VIEWS = [
+  { id: "office",    label: "Virtual Office",  icon: "🏢" },
+  { id: "agents",    label: "Agent Overview",  icon: "🤖" },
+  { id: "queue",     label: "Task Queue",      icon: "📥", badge: true },
+  { id: "metrics",   label: "System Metrics",  icon: "📊" },
+  { id: "vps",       label: "VPS Status",      icon: "🖥️" },
+  { id: "schedules", label: "Tugas Terjadwal", icon: "🗓️" },
+  { id: "token",     label: "Token Status",    icon: "🔑" },
+  { id: "fleet",     label: "Agent Fleet",     icon: "👥" },
+  { id: "log",       label: "Real-Time Log",   icon: "📜" }
+];
+
+/* ---------------- State & polling ---------------- */
+let state = null, prevState = null, connected = false, activeView = "office", polling = false;
+
+function effPaused(a) {
+  if (!a) return false;
+  return !!(a.paused || (state && state.paused_agents && state.paused_agents[a.id]));
+}
+
+async function apiPost(path, body) {
+  try {
+    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({ ok: false, error: "Respons server tidak valid" }));
+    if (!r.ok || !d.ok) { toast("Gagal: " + (d.error || ("HTTP " + r.status))); return false; }
+    return true;
+  } catch (e) { toast("Gagal terhubung ke server"); return false; }
+}
+
+function detectCheer(prev, cur) {
+  if (!prev || !cur || !Array.isArray(prev.tasks) || !Array.isArray(cur.tasks)) return;
+  const m = {};
+  prev.tasks.forEach((t) => { if (t && t.task_id) m[t.task_id] = t.status; });
+  cur.tasks.forEach((t) => {
+    const p = t && t.task_id ? m[t.task_id] : undefined;
+    if ((p === "started" || p === "progress") && t.status === "done" && t.agent && typeof robots3D !== "undefined" && robots3D[t.agent]) {
+      robots3D[t.agent].hop = 2; robots3D[t.agent].hopT = 0;
+    }
+  });
+}
+
+async function poll() {
+  if (polling) return;
+  polling = true;
+  try {
+    const r = await fetch("/api/state", { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    prevState = state; state = d; connected = !!d.ok;
+    detectCheer(prevState, state);
+  } catch (e) { connected = false; }
+  polling = false;
+  renderChrome(); renderActive(); syncRobots();
+}
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = "none"; }, 3500);
+}
+
+/* ---------------- Navigasi ---------------- */
+function buildNav() {
+  $("#nav").innerHTML = VIEWS.map((v) =>
+    '<button class="nav-btn' + (v.id === activeView ? " active" : "") + '" data-view="' + v.id + '" onclick="switchView(\'' + v.id + '\')">' +
+    '<span class="nav-ico">' + v.icon + "</span><span>" + esc(v.label) + "</span>" +
+    (v.badge ? '<span class="nav-badge" id="nav-badge-queue">0</span>' : "") + "</button>"
+  ).join("");
+}
+function switchView(id) {
+  activeView = id;
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === id));
+  document.querySelectorAll(".view").forEach((s) => s.classList.toggle("active", s.id === "view-" + id));
+  document.body.classList.remove("nav-open");
+  updateOfficeMode(); renderActive(); onResize3D();
+}
+function updateOfficeMode() {
+  document.body.classList.toggle("office-active", activeView === "office" && window.innerWidth <= 768);
+}
+window.addEventListener("resize", () => { updateOfficeMode(); onResize3D(); });
+$("#burger").addEventListener("click", () => document.body.classList.toggle("nav-open"));
+$("#scrim").addEventListener("click", () => document.body.classList.remove("nav-open"));
+
+/* ---------------- Chrome (topbar/sidebar/HUD) ---------------- */
+function tickClock() {
+  $("#clock").textContent = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Jakarta" }) + " WIB";
+}
+function renderChrome() {
+  const c = $("#conn");
+  c.classList.toggle("up", connected); c.classList.toggle("down", !connected);
+  $("#conn-text").textContent = connected ? "Terhubung" : "Terputus — mencoba lagi…";
+  $("#side-conn").textContent = connected ? "terhubung" : "terputus";
+  const q = state && Array.isArray(state.queue) ? state.queue.length : 0;
+  const b = $("#nav-badge-queue");
+  if (b) { b.textContent = q; b.classList.toggle("hot", q > 0); }
+  const db = $("#dispatch-btn");
+  const paused = !!(state && state.dispatch_paused);
+  db.innerHTML = paused ? "▶ Resume" : "⏸ Pause";
+  db.classList.toggle("armed", paused);
+  db.title = paused ? "Dispatch sedang dijeda — klik untuk lanjutkan" : "Jeda dispatch global";
+  // HUD 3D
+  if (state && Array.isArray(state.agents)) {
+    let w = 0, id = 0, p = 0;
+    state.agents.forEach((a) => { if (effPaused(a)) p++; else if (a.status === "working") w++; else id++; });
+    $("#office-hud").innerHTML = "<b>" + w + "</b> bekerja · <b>" + id + "</b> idle · <b>" + p + "</b> jeda · antrean <b>" + q + "</b>";
+  } else {
+    $("#office-hud").textContent = connected ? "menunggu data…" : "terputus dari server";
+  }
+}
+function toggleDispatch() {
+  if (!state) { toast("Belum ada data server"); return; }
+  apiPost("/api/dispatch", { paused: !state.dispatch_paused }).then((ok) => { if (ok) poll(); });
+}
+function toggleAgentPause(id) {
+  const a = state && Array.isArray(state.agents) ? state.agents.find((x) => x.id === id) : null;
+  apiPost("/api/agent_pause", { agent: id, paused: !effPaused(a) }).then((ok) => { if (ok) poll(); });
+}
+
+/* ---------------- View: Agent Overview ---------------- */
+function statusPill(a) {
+  if (effPaused(a)) return '<span class="pill paused">Jeda</span>';
+  if (a && a.status === "working") return '<span class="pill working">Bekerja</span>';
+  return '<span class="pill idle">Idle</span>';
+}
+function vAgents() {
+  if (!state) return loadingHTML();
+  const agents = Array.isArray(state.agents) ? state.agents : [];
+  const cards = ROSTER.map((r) => {
+    const a = agents.find((x) => x.id === r.id);
+    const paused = effPaused(a);
+    const t = a && a.task ? a.task : null;
+    return '<div class="card agent-card">' +
+      '<div class="agent-head"><span class="dot" style="background:' + r.css + '"></span>' +
+      '<div><div class="agent-name">' + esc(r.id) + '</div><div class="agent-role">' + esc(r.role) + "</div></div>" +
+      statusPill(a) + "</div>" +
+      '<div class="task-box">' + (t
+        ? '<div class="task-title">' + esc(t.title || "(tanpa judul)") + '</div><div class="task-meta mono">' + esc(t.task_id || "") + " · " + esc(fmtDT(t.ts)) + (t.status ? " · " + esc(t.status) : "") + "</div>"
+        : '<div class="empty-inline">tidak ada task aktif</div>') + "</div>" +
+      '<div><button class="btn" onclick="toggleAgentPause(\'' + esc(r.id) + "')\">" + (paused ? "▶ Resume" : "⏸ Pause") + "</button></div>" +
+      "</div>";
+  }).join("");
+  return '<h2 class="h">Status Agent</h2><div class="grid-cards">' + cards + "</div>";
+}
+
+/* ---------------- View: Task Queue ---------------- */
+const QUICK_TASKS = {
+  riset:  { agent: "Tono", tpl: "[Riset] " },
+  coding: { agent: "Dani", tpl: "[Coding] " },
+  vision: { agent: "Jaka", tpl: "[QC Visual] " },
+  design: { agent: "Mu",   tpl: "[Desain] " }
+};
+function quickTask(kind) {
+  const q = QUICK_TASKS[kind]; if (!q) return;
+  $("#q-agent").value = q.agent;
+  $("#q-prompt").value = q.tpl;
+  $("#q-prompt").focus();
+}
+function submitQueue(e) {
+  e.preventDefault();
+  const prompt = $("#q-prompt").value.trim();
+  if (!prompt) { toast("Prompt tidak boleh kosong"); return; }
+  const agent = $("#q-agent").value;
+  apiPost("/api/queue", { prompt: prompt, agent: agent }).then((ok) => {
+    if (ok) { $("#q-prompt").value = ""; toast("Ditambahkan ke antrean"); poll(); }
+  });
+}
+function vQueue() {
+  if (!state) return loadingHTML();
+  const q = Array.isArray(state.queue) ? state.queue : [];
+  const opts = ROSTER.map((r) => '<option value="' + esc(r.id) + '">' + esc(r.id) + " — " + esc(r.role) + "</option>").join("");
+  const list = q.length ? q.map((it, i) =>
+    '<div class="q-item"><div class="q-num">' + (i + 1) + '</div><div class="q-prompt">' + esc(it.prompt || "") +
+    '<div class="q-meta mono">' + esc(it.agent || "") + " · " + esc(fmtDT(it.ts)) + " · " + esc(it.status || "queued") + "</div></div></div>"
+  ).join("") : '<div class="empty"><div class="big">📥</div>Belum ada antrean — semua task sudah dikerjakan atau belum ada yang ditambahkan.</div>';
+  return '<h2 class="h">Antrean Task (' + q.length + ")</h2>" +
+    '<div class="grid-2"><div>' + list + "</div>" +
+    '<div><div class="card"><h3 class="h">Tambah ke Antrean</h3>' +
+    '<form class="q-form" onsubmit="submitQueue(event)">' +
+    '<div><div class="small muted" style="margin-bottom:8px">Template cepat (klik untuk mengisi, lalu lengkapi & kirim):</div>' +
+    '<div class="quick-row">' +
+    '<button type="button" class="btn" onclick="quickTask(\'riset\')">🔍 Research</button>' +
+    '<button type="button" class="btn" onclick="quickTask(\'coding\')">💻 Coding</button>' +
+    '<button type="button" class="btn" onclick="quickTask(\'vision\')">👁️ Vision</button>' +
+    '<button type="button" class="btn" onclick="quickTask(\'design\')">🎨 Design</button>' +
+    "</div></div>" +
+    '<textarea id="q-prompt" placeholder="Tulis instruksi task di sini…"></textarea>' +
+    '<select id="q-agent">' + opts + "</select>" +
+    '<div><button type="submit" class="btn btn-primary">Tambah ke antrean</button></div>' +
+    "</form></div></div></div>";
+}
+
+/* ---------------- View: System Metrics ---------------- */
+function vMetrics() {
+  if (!state) return loadingHTML();
+  const s = state.system || {};
+  const cores = s.cpu_count || 0;
+  const pct = (v) => cores > 0 ? Math.min(100, (v / cores) * 100) : 0;
+  const loadBar = (v, label) =>
+    '<div class="metric-row"><span class="k">' + label + '</span><span class="v mono">' + (v === null || v === undefined ? "—" : Number(v).toFixed(2)) + "</span></div>" +
+    '<div class="bar"><div class="bar-fill' + (pct(v) >= 90 ? " danger" : pct(v) >= 70 ? " warn" : "") + '" style="width:' + pct(v).toFixed(1) + '%"></div></div>';
+  const memProcs = (state.vps && state.vps.memory && state.vps.memory.processes !== undefined) ? state.vps.memory.processes : "—";
+  return '<h2 class="h">System Metrics</h2><div class="grid-cards">' +
+    '<div class="card"><h3 class="h">CPU Load</h3>' + loadBar(s.load1, "1 menit") + loadBar(s.load5, "5 menit") + loadBar(s.load15, "15 menit") +
+    '<div class="metric-row" style="margin-top:8px"><span class="k">Jumlah CPU</span><span class="v">' + esc(cores || "—") + "</span></div></div>" +
+    '<div class="card"><h3 class="h">Memory (Container)</h3><div class="metric-big mono">' + (s.mem_container_mb !== undefined ? Number(s.mem_container_mb).toFixed(1) : "—") + ' <span class="small muted">MB</span></div>' +
+    '<div class="metric-sub">' + (s.mem_container_gb !== undefined ? Number(s.mem_container_gb).toFixed(2) + " GB" : "") + " · " + esc(memProcs) + " proses</div></div>" +
+    '<div class="card"><h3 class="h">Memory (Host)</h3><div class="metric-big mono">' + (s.mem_host_used_gb !== undefined ? Number(s.mem_host_used_gb).toFixed(1) : "—") + ' <span class="small muted">/ ' + (s.mem_host_total_gb !== undefined ? Number(s.mem_host_total_gb).toFixed(1) : "—") + " GB</span></div>" +
+    '<div class="metric-sub">Di luar kendali — hanya untuk pantauan</div></div>' +
+    '<div class="card"><h3 class="h">Uptime</h3><div class="metric-big">' + esc(s.uptime_human || "—") + '</div><div class="metric-sub mono">' + (s.uptime_sec !== undefined ? Number(s.uptime_sec).toLocaleString("id-ID") + " detik" : "") + "</div></div>" +
+    "</div>";
+}
+
+/* ---------------- View: VPS Status ---------------- */
+function vVps() {
+  if (!state) return loadingHTML();
+  const v = state.vps || {};
+  const disk = v.disk || {}, cpu = v.cpu || {}, mem = v.memory || {}, up = v.uptime || {}, tun = v.tunnel || {}, os = v.os || {}, wd = v.watchdog || {};
+  const dpct = disk.pct !== undefined ? disk.pct : 0;
+  return '<h2 class="h">VPS Status</h2><div class="grid-cards">' +
+    '<div class="card"><h3 class="h">Disk (' + esc(disk.mount || "/") + ')</h3><div class="metric-big mono">' + esc(disk.used_gb !== undefined ? disk.used_gb : "—") + ' <span class="small muted">/ ' + esc(disk.total_gb !== undefined ? disk.total_gb : "—") + " GB</span></div>" +
+    '<div class="bar"><div class="bar-fill' + (dpct >= 90 ? " danger" : "") + '" style="width:' + esc(dpct) + '%"></div></div><div class="metric-sub">' + esc(dpct) + "% terpakai · " + esc(disk.free_gb !== undefined ? disk.free_gb : "—") + " GB bebas</div></div>" +
+    '<div class="card"><h3 class="h">CPU</h3><div class="metric-big" style="font-size:17px;line-height:1.4">' + esc(cpu.model || "—") + "</div>" +
+    '<div class="metric-row"><span class="k">Load 1/5/15 mnt</span><span class="v mono">' + esc(cpu.load1) + " / " + esc(cpu.load5) + " / " + esc(cpu.load15) + "</span></div>" +
+    '<div class="metric-row"><span class="k">Cores</span><span class="v">' + esc(cpu.cores) + "</span></div></div>" +
+    '<div class="card"><h3 class="h">' + esc(mem.label || "MEMORY (CONTAINER)") + "</h3>" +
+    (mem.sub ? '<div class="metric-sub" style="margin-bottom:8px">' + esc(mem.sub) + "</div>" : "") +
+    '<div class="metric-big mono">' + esc(mem.container_gb !== undefined ? mem.container_gb : "—") + ' <span class="small muted">GB</span></div>' +
+    '<div class="metric-sub">' + esc(mem.container_mb !== undefined ? mem.container_mb : "—") + " MB · " + esc(mem.processes !== undefined ? mem.processes : "—") + " proses</div></div>" +
+    '<div class="card"><h3 class="h">Uptime Server</h3><div class="metric-big">' + esc(up.human || "—") + '</div><div class="metric-sub mono">' + (up.sec !== undefined ? Number(up.sec).toLocaleString("id-ID") + " detik" : "") + "</div></div>" +
+    '<div class="card"><h3 class="h">Tunnel</h3>' +
+    (tun.url ? '<div style="word-break:break-all;margin-bottom:8px"><a href="' + esc(tun.url) + '" target="_blank" rel="noopener">' + esc(tun.url) + "</a></div>" : '<div class="empty-inline">tidak ada URL tunnel</div>') +
+    '<div style="margin:8px 0">' + (tun.online ? '<span class="pill online">Online</span>' : '<span class="pill offline">Offline</span>') + "</div>" +
+    '<div class="metric-sub">dicek: ' + esc(tun.checked_human || "—") + "</div></div>" +
+    '<div class="card"><h3 class="h">OS</h3><div class="metric-big" style="font-size:17px">' + esc(os.pretty || "—") + "</div></div>" +
+    '<div class="card"><h3 class="h">Watchdog</h3>' +
+    (wd.last_ts
+      ? '<div class="task-title">' + esc(wd.last_event || "—") + '</div><div class="metric-sub">' + esc(fmtDT(wd.last_ts)) + "</div>" +
+        (wd.last_url ? '<div style="word-break:break-all;margin-top:6px"><a href="' + esc(wd.last_url) + '" target="_blank" rel="noopener" class="small">' + esc(wd.last_url) + "</a></div>" : "")
+      : '<div class="empty-inline">belum pernah jalan</div>') +
+    "</div></div>";
+}
+
+/* ---------------- View: Tugas Terjadwal ---------------- */
+function schedItem(s) {
+  return '<div class="sched-item"><div>' +
+    '<div class="sched-title">' + esc(s.title || "(tanpa judul)") + "</div>" +
+    '<div class="sched-meta mono">' + esc(s.id || "") + (s.label ? " · " + esc(s.label) : "") + (s.timezone ? " · " + esc(s.timezone) : "") + (s.kind ? " · " + esc(s.kind) : "") + "</div>" +
+    '<div class="sched-next">berikutnya: ' + (s.next_human ? esc(s.next_human) : "—") + "</div></div>" +
+    (s.enabled ? '<span class="pill on">ON</span>' : '<span class="pill off">OFF</span>') + "</div>";
+}
+function vSchedules() {
+  if (!state) return loadingHTML();
+  const all = Array.isArray(state.schedules) ? state.schedules : [];
+  const mine = all.filter((s) => !s.is_system), sys = all.filter((s) => s.is_system);
+  let html = '<h2 class="h">Jadwal Saya</h2>';
+  html += mine.length ? '<div class="card">' + mine.map(schedItem).join("") + "</div>"
+    : '<div class="empty"><div class="big">🗓️</div>Belum ada jadwal pribadi — tidak ada cron/heartbeat milik Anda yang terdaftar.</div>';
+  html += '<details class="sys"><summary>Jadwal Sistem (' + sys.length + ")</summary>" +
+    (sys.length ? sys.map(schedItem).join("") : '<div class="empty-inline" style="padding:10px 0">tidak ada jadwal sistem</div>') + "</details>";
+  return html;
+}
+
+/* ---------------- View: Token Status ---------------- */
+function vToken() {
+  if (!state) return loadingHTML();
+  const tk = state.token || {};
+  if (tk.connected) {
+    const hasNums = typeof tk.usage === "number" && typeof tk.limit === "number";
+    return '<h2 class="h">Token Status</h2><div class="card token-empty" style="text-align:left">' +
+      '<div class="token-icon">🔑</div><h3>Tersambung</h3>' +
+      (hasNums
+        ? '<div class="metric-big mono">' + esc(tk.usage) + ' <span class="small muted">/ ' + esc(tk.limit) + "</span></div>"
+        : '<p class="muted">Tersambung, tetapi server belum mengirim angka pemakaian.</p>') +
+      (tk.message ? "<p>" + esc(tk.message) + "</p>" : "") + "</div>";
+  }
+  return '<h2 class="h">Token Status</h2><div class="card token-empty">' +
+    '<div class="token-icon">🔑</div><h3>Belum tersambung</h3>' +
+    "<p>" + esc(tk.message || "Status token belum tersedia.") + "</p>" +
+    (tk.hint ? '<div class="code-block" style="text-align:left">' + esc(tk.hint) + "</div>" : "") +
+    '<p class="muted small">Angka pemakaian akan muncul di sini setelah disambung.</p></div>';
+}
+
+/* ---------------- View: Agent Fleet ---------------- */
+function vFleet() {
+  const cards = ROSTER.map((r) =>
+    '<div class="card"><div class="agent-head"><span class="dot" style="background:' + r.css + '"></span>' +
+    '<div><div class="agent-name">' + esc(r.id) + '</div><div class="agent-role">' + esc(r.role) + "</div></div></div>" +
+    '<ul class="cap-list">' + r.caps.map((c) => "<li>" + esc(c) + "</li>").join("") + "</ul>" +
+    '<div class="visual-note">🤖 <b>Ciri visual 3D:</b> ' + esc(r.visual) + "</div></div>"
+  ).join("");
+  return '<h2 class="h">Agent Fleet (' + ROSTER.length + ")</h2>" + '<div class="grid-cards">' + cards + "</div>";
+}
+
+/* ---------------- View: Real-Time Log ---------------- */
+function vLog() {
+  if (!state) return loadingHTML();
+  const log = Array.isArray(state.log) ? state.log : [];
+  return '<h2 class="h">Real-Time Log</h2>' +
+    (log.length
+      ? '<div class="log-list mono">' + log.map((l) => '<div class="log-line">' + esc(l) + "</div>").join("") + "</div>"
+      : '<div class="empty"><div class="big">📜</div>Belum ada aktivitas tercatat.</div>');
+}
+
+/* ---------------- Render dispatcher ---------------- */
+function renderActive() {
+  const map = { agents: vAgents, queue: vQueue, metrics: vMetrics, vps: vVps, schedules: vSchedules, token: vToken, fleet: vFleet, log: vLog };
+  const fn = map[activeView];
+  if (fn) { const el = $("#view-" + activeView); if (el) el.innerHTML = fn(); }
+}
+</script>
+<script>
+"use strict";
+/* ============================================================
+   3D VIRTUAL OFFICE — Three.js r128, orbit manual (tanpa OrbitControls)
+   ============================================================ */
+var robots3D = {}, robotRoots = [], threeReady = false;
+var renderer, scene, camera, raycaster;
+var lampMat, lampLight;
+var codeTex, codeCanvas, chartTex, chartCanvas, codeLines = [], chartPhase = 0;
+
+var orbit = { tx: 0, ty: 1.3, tz: 0.6, r: 12.5, theta: 0.55, phi: 1.02 };
+var SEAT_X = [-4.2, -2.52, -0.84, 0.84, 2.52, 4.2];
+var BACK_X = [-5, -3, -1, 1, 3, 5];
+
+function officeVisible() { return activeView === "office"; }
+
+/* ---------- Canvas helpers ---------- */
+function rr(x, c, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, 0); c.arcTo(x + w, 0, x + w, h, r); c.arcTo(x + w, h, x, h, r);
+  c.arcTo(x, h, x, 0, r); c.arcTo(x, 0, x + w, 0, r); c.closePath();
+}
+function makeLabelSprite(name, cssColor, paused) {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 72;
+  const x = c.getContext("2d");
+  x.fillStyle = "rgba(10,10,12,0.82)"; rr(8, x, 240, 56, 16); x.fill();
+  x.strokeStyle = paused ? "#6b6b73" : cssColor; x.lineWidth = 3; rr(8, x, 240, 56, 16); x.stroke();
+  x.fillStyle = paused ? "#9a9aa2" : "#ffffff";
+  x.font = "600 29px system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillText((paused ? "⏸ " : "") + name, 128, 30);
+  const tex = new THREE.CanvasTexture(c);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sp.scale.set(2.0, 0.56, 1); sp.position.y = 2.62;
+  return sp;
+}
+function refreshLabel(r, cfg) {
+  if (r.userData.label) { r.remove(r.userData.label); r.userData.label.material.map.dispose(); r.userData.label.material.dispose(); }
+  r.userData.label = makeLabelSprite(cfg.id, cfg.css, r.userData.paused);
+  r.add(r.userData.label);
+}
+
+/* ---------- Robot builder ---------- */
+function buildRobot(cfg) {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x9aa4b5, roughness: 0.55, metalness: 0.3 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x3a404c, roughness: 0.7, metalness: 0.25 });
+  const accentMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.45, metalness: 0.35 });
+  const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.3 });
+  const P = {};
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.5), bodyMat); body.position.y = 1.1; g.add(body);
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.18, 0.05), accentMat); chest.position.set(0, 1.28, 0.26); g.add(chest);
+  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.1, 0.52), darkMat); belt.position.y = 0.68; g.add(belt);
+
+  const headG = new THREE.Group(); headG.position.y = 1.86; g.add(headG); P.headG = headG;
+  headG.add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.55, 0.55), bodyMat));
+
+  if (cfg.id !== "Jaka") {
+    const mkEye = (sx) => {
+      const e = new THREE.Group(); e.position.set(0.15 * sx, 0.04, 0.28);
+      e.add(new THREE.Mesh(new THREE.SphereGeometry(0.095, 16, 16), whiteMat));
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 12), pupilMat); p.position.z = 0.07; e.add(p);
+      headG.add(e); return e;
+    };
+    P.eyeL = mkEye(-1); P.eyeR = mkEye(1);
+  }
+
+  const mkArm = (sx) => {
+    const piv = new THREE.Group(); piv.position.set(0.53 * sx, 1.5, 0);
+    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.66, 12), darkMat); a.position.y = -0.33; piv.add(a);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), accentMat); hand.position.y = -0.68; piv.add(hand);
+    g.add(piv); return piv;
+  };
+  P.armL = mkArm(-1); P.armR = mkArm(1);
+
+  const mkLeg = (sx) => {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.72, 0.24), darkMat); l.position.set(0.2 * sx, 0.36, 0); g.add(l);
+    const f = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.34), darkMat); f.position.set(0.2 * sx, 0.06, 0.05); g.add(f);
+  };
+  mkLeg(-1); mkLeg(1);
+
+  /* --- Aksesori per agent --- */
+  if (cfg.id === "Mu") {
+    const beret = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.33, 0.09, 18),
+      new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.6 }));
+    beret.position.set(-0.08, 0.34, -0.04); beret.rotation.z = 0.28; beret.rotation.x = -0.1; headG.add(beret);
+    const stylus = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.42, 10),
+      new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.4 }));
+    stylus.position.set(0, -0.68, 0.1); stylus.rotation.x = 0.5; P.armR.add(stylus);
+    const tablet = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.04, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x1c1c21, roughness: 0.4 }));
+    tablet.position.set(0, 1.02, 0.62); tablet.rotation.x = -0.22; g.add(tablet);
+  }
+  if (cfg.id === "Cipu") {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.055, 12, 24), darkMat);
+    band.position.y = 0.06; band.rotation.y = Math.PI / 2; headG.add(band);
+    [-1, 1].forEach((sx) => {
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.09, 16),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 }));
+      cup.position.set(0.33 * sx, 0, 0); cup.rotation.z = Math.PI / 2; headG.add(cup);
+    });
+    P.recMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.6 });
+    const rec = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), P.recMat);
+    rec.position.set(0.2, 0.36, 0.12); headG.add(rec);
+  }
+  if (cfg.id === "Jaka") {
+    const lensG = new THREE.Group(); lensG.position.set(0, 0.02, 0.3); headG.add(lensG); P.lensG = lensG;
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.3, 20), darkMat);
+    barrel.rotation.x = Math.PI / 2; lensG.add(barrel);
+    const glass = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24),
+      new THREE.MeshStandardMaterial({ color: 0x0e1626, roughness: 0.15, metalness: 0.65 }));
+    glass.position.z = 0.155; lensG.add(glass);
+    const glint = new THREE.Mesh(new THREE.CircleGeometry(0.032, 12),
+      new THREE.MeshBasicMaterial({ color: 0xbfe9ff }));
+    glint.position.set(0.045, 0.05, 0.158); lensG.add(glint);
+  }
+  if (cfg.id === "Tono") {
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), darkMat);
+    ant.position.set(0.16, 0.52, 0); headG.add(ant);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.2 }));
+    tip.position.set(0.16, 0.79, 0); headG.add(tip);
+    const mag = new THREE.Group();
+    mag.add(new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.028, 10, 24),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })));
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8), darkMat);
+    handle.position.y = -0.28; mag.add(handle);
+    mag.position.set(0, -0.72, 0.14); P.armR.add(mag);
+  }
+  if (cfg.id === "Dani") {
+    const kb = new THREE.Group();
+    kb.add(new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.06, 0.36),
+      new THREE.MeshStandardMaterial({ color: 0x1c1c21, roughness: 0.5 })));
+    const keyMat = new THREE.MeshStandardMaterial({ color: 0x34d399, roughness: 0.4, emissive: 0x34d399, emissiveIntensity: 0.25 });
+    for (let rI = 0; rI < 2; rI++) for (let cI = 0; cI < 5; cI++) {
+      const key = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 0.1), keyMat);
+      key.position.set(-0.34 + cI * 0.17, 0.045, -0.07 + rI * 0.16); kb.add(key);
+    }
+    kb.position.set(0, 1.32, 0.95); g.add(kb);
+  }
+
+  g.userData = {
+    agentId: cfg.id, parts: P, phase: Math.random() * Math.PI * 2,
+    working: false, paused: false, hop: 0, hopT: 0,
+    blinkT: 1 + Math.random() * 3, blinkUntil: 0, label: null,
+    target: { pos: new THREE.Vector3(BACK_X[ROSTER.findIndex((r) => r.id === cfg.id)] || 0, 0, 4.9), rotY: 0 }
+  };
+  const bi = ROSTER.findIndex((r) => r.id === cfg.id);
+  g.position.set(BACK_X[bi >= 0 ? bi : 0], 0, 4.9);
+  refreshLabel(g, cfg);
+  return g;
+}
+
+/* ---------- Ruangan ---------- */
+function drawCityTexture() {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256;
+  const x = c.getContext("2d");
+  const gr = x.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, "#04060d"); gr.addColorStop(1, "#0c1428");
+  x.fillStyle = gr; x.fillRect(0, 0, 512, 256);
+  x.fillStyle = "#e8ecf5"; x.beginPath(); x.arc(440, 42, 16, 0, 7); x.fill();
+  x.fillStyle = "rgba(232,236,245,0.25)"; x.beginPath(); x.arc(440, 42, 26, 0, 7); x.fill();
+  for (let i = 0; i < 5; i++) { // gedung siluet
+    const bx = 20 + i * 100, bw = 70 + (i * 37) % 30, bh = 90 + (i * 53) % 70;
+    x.fillStyle = "#080b14"; x.fillRect(bx, 256 - bh, bw, bh);
+    for (let wy = 256 - bh + 10; wy < 246; wy += 16) for (let wx = bx + 8; wx < bx + bw - 6; wx += 14) {
+      if (Math.random() < 0.42) { x.fillStyle = "rgba(255,200,110," + (0.35 + Math.random() * 0.55) + ")"; x.fillRect(wx, wy, 6, 8); }
+    }
+  }
+  return new THREE.CanvasTexture(c);
+}
+function initCodeMonitor() {
+  codeCanvas = document.createElement("canvas"); codeCanvas.width = 320; codeCanvas.height = 200;
+  codeTex = new THREE.CanvasTexture(codeCanvas);
+  const seeds = ["const task = await dispatch(q);", "function render(state) {", "  return agents.map(sync);", "}",
+    "// poll setiap 3 detik", "fetch('/api/state')", "let load = sys.load1;", "if (paused) return;",
+    "robots.forEach(animate);", "export default office;", "const hud = update();", "while (ok) { poll(); }"];
+  const cols = ["#7dd3fc", "#c4b5fd", "#86efac", "#fca5a5", "#8b8b93", "#fcd34d"];
+  for (let i = 0; i < 14; i++) codeLines.push({ t: seeds[i % seeds.length], c: cols[i % cols.length] });
+  drawCode();
+}
+function drawCode() {
+  if (!codeCanvas) return;
+  const x = codeCanvas.getContext("2d");
+  x.fillStyle = "#0b0e14"; x.fillRect(0, 0, 320, 200);
+  x.font = "11px ui-monospace, Menlo, monospace";
+  codeLines.forEach((l, i) => { x.fillStyle = l.c; x.fillText(l.t, 12, 20 + i * 13); });
+  codeTex.needsUpdate = true;
+}
+function pushCodeLine() {
+  const seeds = ["await api.queue(prompt);", "syncRobots(state);", "lamp.color.set(ok);", "orbit.update(dt);",
+    "raycast agents…", "hop(robot, 2);", "// idle: sway", "theta += dx*0.005;"];
+  const cols = ["#7dd3fc", "#c4b5fd", "#86efac", "#fca5a5", "#fcd34d"];
+  codeLines.shift();
+  codeLines.push({ t: seeds[Math.floor(Math.random() * seeds.length)], c: cols[Math.floor(Math.random() * cols.length)] });
+  drawCode();
+}
+function initChartMonitor() {
+  chartCanvas = document.createElement("canvas"); chartCanvas.width = 320; chartCanvas.height = 200;
+  chartTex = new THREE.CanvasTexture(chartCanvas);
+  drawChart();
+}
+function drawChart() {
+  if (!chartCanvas) return;
+  const x = chartCanvas.getContext("2d"), w = 320, h = 200;
+  x.fillStyle = "#0b0e14"; x.fillRect(0, 0, w, h);
+  x.strokeStyle = "#1b1b22"; x.lineWidth = 1;
+  for (let gy = 20; gy < h; gy += 30) { x.beginPath(); x.moveTo(0, gy); x.lineTo(w, gy); x.stroke(); }
+  const wave = (color, amp, lw, ph) => {
+    x.strokeStyle = color; x.lineWidth = lw; x.beginPath();
+    for (let px = 0; px <= w; px += 4) {
+      const py = h / 2 + Math.sin(px * 0.05 + ph) * amp + Math.sin(px * 0.013 + ph * 0.6) * amp * 0.6;
+      px === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+    }
+    x.stroke();
+  };
+  wave("rgba(52,211,153,0.35)", 26, 1.5, chartPhase * 0.7);
+  wave("#38bdf8", 30, 2, chartPhase);
+}
+
+function buildRoom() {
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
+    new THREE.MeshStandardMaterial({ color: 0x111114, roughness: 1 }));
+  floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0f, roughness: 1 });
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 9), wallMat);
+  back.position.set(0, 4.5, -6.5); scene.add(back);
+  [-1, 1].forEach((s) => {
+    const side = new THREE.Mesh(new THREE.PlaneGeometry(18, 9), wallMat);
+    side.position.set(13 * s, 4.5, 0); side.rotation.y = -s * Math.PI / 2; scene.add(side);
+  });
+
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.4),
+    new THREE.MeshBasicMaterial({ map: drawCityTexture() }));
+  win.position.set(0, 3.2, -6.44); scene.add(win);
+  const winFrame = new THREE.Mesh(new THREE.BoxGeometry(13.4, 3.8, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x1d1d22, roughness: 0.8 }));
+  winFrame.position.set(0, 3.2, -6.5); scene.add(winFrame);
+
+  const tableMat = new THREE.MeshStandardMaterial({ color: 0x1d1d22, roughness: 0.7 });
+  const top = new THREE.Mesh(new THREE.BoxGeometry(11, 0.18, 2.6), tableMat);
+  top.position.set(0, 0.92, 0); scene.add(top);
+  [[-5.2, -1.1], [5.2, -1.1], [-5.2, 1.1], [5.2, 1.1]].forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.92, 0.18), tableMat);
+    leg.position.set(lx, 0.46, lz); scene.add(leg);
+  });
+
+  const chairMat = new THREE.MeshStandardMaterial({ color: 0x232329, roughness: 0.8 });
+  SEAT_X.forEach((sx) => {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.1, 0.72), chairMat);
+    seat.position.set(sx, 0.48, 1.75); scene.add(seat);
+    const backr = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.8, 0.1), chairMat);
+    backr.position.set(sx, 0.92, 2.08); scene.add(backr);
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.48, 10), chairMat);
+    post.position.set(sx, 0.24, 1.75); scene.add(post);
+  });
+
+  initCodeMonitor(); initChartMonitor();
+  const mkMonitor = (mx, tex) => {
+    const grp = new THREE.Group();
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.3, 0.09),
+      new THREE.MeshStandardMaterial({ color: 0x17171c, roughness: 0.6 }));
+    shell.position.y = 0.65; grp.add(shell);
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(2.04, 1.14), new THREE.MeshBasicMaterial({ map: tex }));
+    scr.position.set(0, 0.65, 0.048); grp.add(scr);
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.14),
+      new THREE.MeshStandardMaterial({ color: 0x17171c }));
+    stand.position.y = -0.25; grp.add(stand);
+    grp.position.set(mx, 1.75, -0.35); scene.add(grp);
+  };
+  mkMonitor(-2.6, codeTex); mkMonitor(2.6, chartTex);
+
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.42, 14),
+    new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.8 }));
+  pot.position.set(7.6, 0.21, -4.6); scene.add(pot);
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d4f, roughness: 0.9 });
+  for (let i = 0; i < 4; i++) {
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.95, 8), leafMat);
+    leaf.position.set(7.6 + (i - 1.5) * 0.14, 0.85, -4.6 + ((i % 2) - 0.5) * 0.16);
+    leaf.rotation.z = (i - 1.5) * 0.22; scene.add(leaf);
+  }
+
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 10),
+    new THREE.MeshStandardMaterial({ color: 0x2c2c33 }));
+  pole.position.set(-8.5, 1.1, -5.5); scene.add(pole);
+  lampMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 1.4 });
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), lampMat);
+  lamp.position.set(-8.5, 2.35, -5.5); scene.add(lamp);
+  lampLight = new THREE.PointLight(0x22c55e, 0.7, 9);
+  lampLight.position.set(-8.5, 2.35, -5.5); scene.add(lampLight);
+}
+
+/* ---------- Orbit manual ---------- */
+function applyCamera() {
+  const sp = Math.sin(orbit.phi), r = orbit.r;
+  camera.position.set(
+    orbit.tx + r * sp * Math.sin(orbit.theta),
+    orbit.ty + r * Math.cos(orbit.phi),
+    orbit.tz + r * sp * Math.cos(orbit.theta)
+  );
+  camera.lookAt(orbit.tx, orbit.ty, orbit.tz);
+}
+function clampOrbit() {
+  orbit.phi = Math.max(0.3, Math.min(1.45, orbit.phi));
+  orbit.r = Math.max(5, Math.min(20, orbit.r));
+}
+function initControls(canvas) {
+  const pts = new Map();
+  let downX = 0, downY = 0, moved = false, lastPinch = 0;
+  canvas.addEventListener("pointerdown", (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    downX = e.clientX; downY = e.clientY; moved = false; lastPinch = 0;
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId);
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) moved = true;
+    if (pts.size === 1) {
+      orbit.theta -= dx * 0.0052; orbit.phi -= dy * 0.0052; clampOrbit(); applyCamera();
+    } else if (pts.size === 2) {
+      const p = [...pts.values()];
+      const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+      if (lastPinch > 0) { orbit.r *= (1 - (d - lastPinch) * 0.0035); clampOrbit(); applyCamera(); }
+      lastPinch = d;
+    }
+  });
+  const up = (e) => {
+    const wasClick = pts.has(e.pointerId) && !moved;
+    pts.delete(e.pointerId);
+    if (wasClick && e.type === "pointerup") onCanvasClick(e);
+    if (pts.size < 2) lastPinch = 0;
+  };
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    orbit.r *= (1 + e.deltaY * 0.001); clampOrbit(); applyCamera();
+  }, { passive: false });
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+function onCanvasClick(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  const ny = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera({ x: nx, y: ny }, camera);
+  const hits = raycaster.intersectObjects(robotRoots, true);
+  if (hits.length) {
+    let o = hits[0].object;
+    while (o && !o.userData.agentId) o = o.parent;
+    if (o && o.userData.agentId) toggleAgentPause(o.userData.agentId);
+  }
+}
+
+/* ---------- Sinkronisasi data → 3D (tanpa rebuild) ---------- */
+function syncRobots() {
+  if (!threeReady || !state || !Array.isArray(state.agents)) return;
+  const order = state.agents.map((a) => a.id);
+  ROSTER.forEach((cfg, i) => {
+    const r = robots3D[cfg.id]; if (!r) return;
+    const a = state.agents.find((x) => x.id === cfg.id);
+    const paused = !!(a && (a.paused || (state.paused_agents && state.paused_agents[cfg.id])));
+    const working = !paused && !!a && a.status === "working";
+    let idx = order.indexOf(cfg.id); if (idx < 0) idx = i;
+    if (working) { r.userData.target.pos.set(SEAT_X[idx], -0.34, 1.75); r.userData.target.rotY = Math.PI; }
+    else { r.userData.target.pos.set(BACK_X[idx], 0, 4.9); r.userData.target.rotY = 0; }
+    if (r.userData.paused !== paused) { r.userData.paused = paused; refreshLabel(r, cfg); }
+    r.userData.working = working;
+  });
+  let col = 0x22c55e;
+  if (state.dispatch_paused) col = 0xef4444;
+  else if (state.system && state.system.cpu_count && state.system.load1 > state.system.cpu_count * 0.7) col = 0xf59e0b;
+  lampMat.color.setHex(col); lampMat.emissive.setHex(col); lampLight.color.setHex(col);
+}
+
+/* ---------- Animasi ---------- */
+var clk = null;
+function relaxArm(arm, k) {
+  arm.rotation.x += (0 - arm.rotation.x) * k;
+  arm.rotation.z += (0 - arm.rotation.z) * k;
+}
+function animate() {
+  requestAnimationFrame(animate);
+  if (!threeReady) return;
+  const dt = Math.min(clk.getDelta(), 0.05), t = clk.elapsedTime;
+  if (!officeVisible()) return;
+  const k = 1 - Math.exp(-4 * dt);
+
+  Object.keys(robots3D).forEach((id) => {
+    const r = robots3D[id], u = r.userData, P = u.parts, tp = u.target;
+    r.position.x += (tp.pos.x - r.position.x) * k;
+    r.position.z += (tp.pos.z - r.position.z) * k;
+    let yOff = 0;
+    if (u.hop > 0) {
+      u.hopT += dt; const hd = 0.55;
+      yOff = Math.abs(Math.sin((u.hopT / hd) * Math.PI)) * 0.5;
+      if (u.hopT >= hd) { u.hopT = 0; u.hop--; }
+    }
+    let yT = tp.pos.y + yOff;
+    if (!u.working && !u.paused) yT += Math.sin(t * 1.6 + u.phase) * 0.03;
+    r.position.y += (yT - r.position.y) * k;
+    let dr = tp.rotY - r.rotation.y;
+    dr = Math.atan2(Math.sin(dr), Math.cos(dr));
+    r.rotation.y += dr * k;
+
+    if (!u.paused && P.eyeL) { // kedip mata
+      if (t > u.blinkT) { u.blinkUntil = t + 0.12; u.blinkT = t + 2 + Math.random() * 3; }
+      const s = t < u.blinkUntil ? 0.12 : 1;
+      P.eyeL.scale.y += (s - P.eyeL.scale.y) * 0.5; P.eyeR.scale.y = P.eyeL.scale.y;
+    }
+    if (!u.working && !u.paused) { // idle: kepala bergoyang lembut
+      P.headG.rotation.y += (Math.sin(t * 1.1 + u.phase) * 0.14 - P.headG.rotation.y) * k;
+    } else if (id !== "Jaka" || !u.working) {
+      P.headG.rotation.y += (0 - P.headG.rotation.y) * k;
+    }
+
+    if (u.working && !u.paused) {
+      if (id === "Dani" || id === "Anca") { // mengetik
+        P.armR.rotation.x = -1.0 + Math.sin(t * 13) * 0.35;
+        P.armL.rotation.x = -1.0 + Math.sin(t * 13 + 1.6) * 0.35;
+        P.armR.rotation.z = 0; P.armL.rotation.z = 0;
+      } else if (id === "Mu") { // menggambar
+        P.armR.rotation.x = -1.15; P.armR.rotation.z = Math.sin(t * 2.4) * 0.55;
+        P.armL.rotation.x += (-0.45 - P.armL.rotation.x) * k;
+      } else if (id === "Cipu") { // mengangguk + REC
+        P.headG.position.y = 1.86 + Math.abs(Math.sin(t * 5.2)) * 0.07;
+        P.headG.rotation.z = Math.sin(t * 2.6) * 0.07;
+        relaxArm(P.armL, k); relaxArm(P.armR, k);
+      } else if (id === "Jaka") { // lensa pulse + scan
+        if (P.lensG) P.lensG.scale.setScalar(1 + Math.sin(t * 3.2) * 0.09);
+        P.headG.rotation.y = Math.sin(t * 0.8) * 0.45;
+        relaxArm(P.armL, k); relaxArm(P.armR, k);
+      } else if (id === "Tono") { // angkat kaca pembesar
+        P.armR.rotation.x += (-1.65 - P.armR.rotation.x) * k;
+        P.armR.rotation.z += (0 - P.armR.rotation.z) * k;
+        relaxArm(P.armL, k);
+      } else { relaxArm(P.armL, k); relaxArm(P.armR, k); }
+    } else {
+      relaxArm(P.armL, k); relaxArm(P.armR, k);
+      if (id === "Cipu") {
+        P.headG.position.y += (1.86 - P.headG.position.y) * k;
+        P.headG.rotation.z += (0 - P.headG.rotation.z) * k;
+      }
+      if (id === "Jaka" && P.lensG) {
+        const s = P.lensG.scale.x; P.lensG.scale.setScalar(s + (1 - s) * k);
+      }
+    }
+    if (id === "Cipu" && P.recMat) {
+      P.recMat.emissiveIntensity = (u.working && !u.paused) ? (Math.sin(t * 9) > 0 ? 2.2 : 0.25) : 0.6;
+    }
+  });
+
+  chartPhase += dt * 1.4; drawChart();
+  renderer.render(scene, camera);
+}
+
+/* ---------- Resize ---------- */
+function onResize3D() {
+  if (!threeReady) return;
+  const wrap = $("#gl-wrap");
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+
+/* ---------- Init ---------- */
+function init3D() {
+  const canvas = $("#gl");
+  if (typeof THREE === "undefined") {
+    $("#gl-wrap").innerHTML = '<div class="gl-fallback">Three.js gagal dimuat — periksa file /vendor/three.min.js di server.</div>';
+    return;
+  }
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x060607);
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x060607, 22, 40);
+  camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  raycaster = new THREE.Raycaster();
+  clk = new THREE.Clock();
+  applyCamera();
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const key = new THREE.DirectionalLight(0xfff2e0, 0.65); key.position.set(6, 9, 7); scene.add(key);
+  const warm = new THREE.PointLight(0xffd9a0, 0.5, 22); warm.position.set(0, 4.5, 1.5); scene.add(warm);
+
+  buildRoom();
+  ROSTER.forEach((cfg) => {
+    const r = buildRobot(cfg);
+    robots3D[cfg.id] = r; robotRoots.push(r); scene.add(r);
+  });
+
+  initControls(canvas);
+  threeReady = true;
+  onResize3D();
+  if (window.ResizeObserver) new ResizeObserver(onResize3D).observe($("#gl-wrap"));
+  setInterval(() => { if (officeVisible() && threeReady) pushCodeLine(); }, 300);
+  animate();
+}
+
+/* ---------- Boot ---------- */
+buildNav();
+tickClock(); setInterval(tickClock, 1000);
+updateOfficeMode();
+init3D();
+setInterval(poll, 3000);
+poll();
+</script>
+</body>
+</html>
