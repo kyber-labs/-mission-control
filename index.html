@@ -172,7 +172,7 @@ details.sys summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:13px
         <div id="gl-wrap">
           <canvas id="gl"></canvas>
           <div id="office-hud">memuat…</div>
-          <div class="office-hint">Seret untuk memutar · scroll / cubit untuk zoom · klik robot untuk jeda / lanjut</div>
+          <div class="office-hint">Seret untuk memutar · scroll / cubit untuk zoom · klik figur untuk jeda / lanjut</div>
         </div>
       </section>
       <section class="view" id="view-agents"></section>
@@ -218,22 +218,22 @@ function loadingHTML() { return '<div class="empty"><div class="big">⏳</div>Me
 const ROSTER = [
   { id: "Anca", role: "Project Manager / General", color: 0x38bdf8, css: "#38bdf8",
     caps: ["Koordinasi & delegasi task antar-agent", "Monitoring progres dan status", "General purpose / serbaguna"],
-    visual: "Robot standar tanpa aksesori khusus — bodi abu-abu netral dengan aksen biru langit." },
+    visual: "Figur manusia chibi berambut biru, pakaian biru langit, tanpa aksesori khusus." },
   { id: "Mu", role: "Graphic Designer", color: 0xa855f7, css: "#a855f7",
     caps: ["Desain grafis & ilustrasi", "Komposisi visual & layout", "Aset gambar untuk konten"],
-    visual: "Baret ungu miring di kepala, stylus di tangan kanan, dan drawing tablet tipis di depannya." },
+    visual: "Figur manusia chibi berambut ungu dengan baret ungu miring, stylus di tangan kanan, drawing tablet di atas meja." },
   { id: "Cipu", role: "Video Editor", color: 0xef4444, css: "#ef4444",
     caps: ["Editing & cutting video", "Color grading dasar", "Render & ekspor"],
-    visual: "Headphone di kepala dengan lampu indikator REC merah yang berkedip." },
+    visual: "Figur manusia chibi berambut merah dengan headphone merah dan lampu indikator REC yang berkedip." },
   { id: "Jaka", role: "QC Visual", color: 0x22d3ee, css: "#22d3ee",
     caps: ["Quality control visual", "Review detail & ketelitian", "Verifikasi hasil akhir"],
-    visual: "Satu mata kamera besar (lensa silinder) di wajah — bukan dua mata biasa." },
+    visual: "Figur manusia chibi berambut hijau dengan kamera kecil di dada (lensa berdenyut saat memeriksa) dan kacamata." },
   { id: "Tono", role: "Riset", color: 0xf59e0b, css: "#f59e0b",
     caps: ["Riset & pengumpulan informasi", "Analisis & sintesis temuan", "Laporan hasil riset"],
-    visual: "Kaca pembesar di tangan dan antena di kepala." },
+    visual: "Figur manusia chibi berambut pirang bertopi kuning, kaca pembesar di tangan." },
   { id: "Dani", role: "Coding", color: 0x34d399, css: "#34d399",
     caps: ["Penulisan & perbaikan kode", "Debugging", "Implementasi fitur"],
-    visual: "Keyboard mini melayang di depan dengan tombol-tombol kecil." }
+    visual: "Figur manusia chibi berambut teal dengan keyboard mini hijau di atas meja." }
 ];
 
 const VIEWS = [
@@ -271,8 +271,8 @@ function detectCheer(prev, cur) {
   prev.tasks.forEach((t) => { if (t && t.task_id) m[t.task_id] = t.status; });
   cur.tasks.forEach((t) => {
     const p = t && t.task_id ? m[t.task_id] : undefined;
-    if ((p === "started" || p === "progress") && t.status === "done" && t.agent && typeof robots3D !== "undefined" && robots3D[t.agent]) {
-      robots3D[t.agent].hop = 2; robots3D[t.agent].hopT = 0;
+    if ((p === "started" || p === "progress") && t.status === "done" && t.agent && typeof figures3D !== "undefined" && figures3D[t.agent]) {
+      figures3D[t.agent].hop = 2; figures3D[t.agent].hopT = 0;
     }
   });
 }
@@ -288,7 +288,7 @@ async function poll() {
     detectCheer(prevState, state);
   } catch (e) { connected = false; }
   polling = false;
-  renderChrome(); renderActive(); syncRobots();
+  renderChrome(); renderActive(); syncFigures();
 }
 
 function toast(msg) {
@@ -551,28 +551,31 @@ function renderActive() {
 /* ============================================================
    3D VIRTUAL OFFICE — Three.js r128, orbit manual (tanpa OrbitControls)
    ============================================================ */
-var robots3D = {}, robotRoots = [], threeReady = false;
+var figures3D = {}, figureRoots = [], threeReady = false;
 var renderer, scene, camera, raycaster;
 var lampMat, lampLight;
 var codeTex, codeCanvas, chartTex, chartCanvas, codeLines = [], chartPhase = 0;
 
-var orbit = { tx: 0, ty: 1.3, tz: 1.6, r: 13.5, theta: 0.55, phi: 1.02 };
+var orbit = { tx: 0, ty: 1.3, tz: 1.6, r: 15.5, theta: 0.55, phi: 0.98 };
 /* Kamera halus: orbit = target, orbitCur = posisi kamera yang dihaluskan tiap frame (sapuan pembuka dari jauh). */
-var orbitCur = { tx: 0, ty: 1.3, tz: 1.6, r: 16.5, theta: 1.15, phi: 1.18 };
+var orbitCur = { tx: 0, ty: 1.3, tz: 1.6, r: 18.5, theta: 1.15, phi: 1.18 };
 var shadowsOn = (typeof window !== "undefined" && window.innerWidth >= 900);
 /* Layout kantor gaya video: 6 meja individual, 2 baris x 3 kolom.
    Baris depan (Anca, Mu, Cipu) dan baris belakang (Jaka, Tono, Dani)
-   sama-sama menghadap dinding (-z). Robot duduk di seatZ saat working,
+   sama-sama menghadap dinding (-z). Figur duduk di seatZ saat working,
    berdiri di idleZ (lorong) saat idle. */
-var DESK_X = [-3.6, 0, 3.6];
+var DESK_X = [[-3.6, 0, 3.6], [-1.8, 1.8, 5.4]];
 var DESK_ROWS = [
   { seatZ: 3.0, deskZ: 2.0, idleZ: 5.2 },
   { seatZ: -0.6, deskZ: -1.6, idleZ: 1.2 }
 ];
+/* Baris belakang digeser setengah kolom (x -1,8 / 1,8 / 5,4) supaya tidak
+   tepat di belakang baris depan — perbaikan cacat live: Jaka selalu tertutup. */
 function deskOf(cfg) {
   const i = ROSTER.findIndex((r) => r.id === cfg.id);
   const idx = i < 0 ? 0 : i;
-  return { x: DESK_X[idx % 3], row: DESK_ROWS[idx < 3 ? 0 : 1] };
+  const row = idx < 3 ? 0 : 1;
+  return { x: DESK_X[row][idx % 3], row: DESK_ROWS[row] };
 }
 
 function officeVisible() { return activeView === "office"; }
@@ -605,7 +608,7 @@ function refreshLabel(r, cfg) {
   r.add(r.userData.label);
 }
 
-/* ---------- Bubble tugas di atas robot (gaya video) ----------
+/* ---------- Bubble tugas di atas figur (gaya video) ----------
    Isi = judul tugas ASLI dari state.agents[].task.title (bukan teks palsu).
    Hanya tampil saat working; paused tampil "⏸ Dijeda"; idle tanpa bubble.
    Sprite hanya digambar ulang bila judul/status berubah (poll 3 detik). */
@@ -614,27 +617,27 @@ function wrapBubbleText(text) {
   const lines = []; let cur = ""; let i = 0;
   for (; i < words.length && lines.length < 2; i++) {
     const t = cur ? cur + " " + words[i] : words[i];
-    if (t.length > 26 && cur) { lines.push(cur); cur = words[i]; }
+    if (t.length > 22 && cur) { lines.push(cur); cur = words[i]; }
     else cur = t;
   }
   if (cur) lines.push(cur);
-  if (i < words.length && lines.length === 2) lines[1] = lines[1].slice(0, 23) + "…";
+  if (i < words.length && lines.length === 2) lines[1] = lines[1].slice(0, 19) + "…";
   return lines.length ? lines : ["…"];
 }
 function makeBubbleSprite(text, cssColor) {
   const lines = wrapBubbleText(text);
-  const c = document.createElement("canvas"); c.width = 512; c.height = 56 + lines.length * 34;
+  const c = document.createElement("canvas"); c.width = 512; c.height = 52 + lines.length * 30;
   const x = c.getContext("2d");
   x.fillStyle = "rgba(255,255,255,0.96)"; rr(8, x, 496, c.height - 16, 24); x.fill();
   x.strokeStyle = cssColor; x.lineWidth = 4; rr(8, x, 496, c.height - 16, 24); x.stroke();
-  x.fillStyle = "#26262e"; x.font = "600 27px system-ui, sans-serif";
+  x.fillStyle = "#26262e"; x.font = "600 24px system-ui, sans-serif";
   x.textAlign = "center"; x.textBaseline = "middle";
-  lines.forEach((ln, i) => x.fillText(ln, 256, 34 + i * 34));
+  lines.forEach((ln, i) => x.fillText(ln, 256, 32 + i * 30));
   x.fillStyle = "rgba(255,255,255,0.96)";
   x.beginPath(); x.moveTo(236, c.height - 16); x.lineTo(276, c.height - 16); x.lineTo(256, c.height - 2); x.closePath(); x.fill();
   const tex = new THREE.CanvasTexture(c);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sp.scale.set(2.6, 2.6 * c.height / 512, 1); sp.position.y = 3.72;
+  sp.scale.set(2.2, 2.2 * c.height / 512, 1); sp.position.y = 3.45;
   return sp;
 }
 function refreshBubble(r, cfg, a, paused) {
@@ -653,55 +656,75 @@ function refreshBubble(r, cfg, a, paused) {
   r.add(r.userData.bubble);
 }
 
-/* ---------- Robot builder ---------- */
-function buildRobot(cfg) {
+/* ---------- Human builder (figur manusia chibi) ----------
+   Proporsi dijaga setinggi robot lama (kepala di y 1,86) supaya label,
+   bubble, cincin, dan semua animasi (kedip, ketik, goyang, hop) tetap jalan.
+   Saat working, kaki ditekuk (paha ke depan, betis tegak) seperti duduk;
+   saat idle, kaki lurus berdiri. */
+const SKIN_TONES = [0xf2c9a0, 0xe8b88a, 0xf0c8a0, 0xd9a066, 0xeab98c, 0xc98d5f];
+const HAIR_COLORS = [0x3b82f6, 0x8b5cf6, 0xef4444, 0x22c55e, 0xfbbf24, 0x14b8a6];
+function buildHuman(cfg) {
   const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x9aa4b5, roughness: 0.55, metalness: 0.3 });
+  const idx = ROSTER.findIndex((r) => r.id === cfg.id);
+  const skinMat = new THREE.MeshStandardMaterial({ color: SKIN_TONES[idx < 0 ? 0 : idx], roughness: 0.6 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: HAIR_COLORS[idx < 0 ? 0 : idx], roughness: 0.7 });
+  const clothMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.6 });
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x3a404c, roughness: 0.7, metalness: 0.25 });
-  const accentMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.45, metalness: 0.35 });
   const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
   const pupilMat = new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.3 });
   const P = {};
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.5), bodyMat); body.position.y = 1.1; g.add(body);
-  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.18, 0.05), accentMat); chest.position.set(0, 1.28, 0.26); g.add(chest);
-  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.1, 0.52), darkMat); belt.position.y = 0.68; g.add(belt);
+  /* Badan: pinggul, torso pakaian aksen, panel dada terang, leher. */
+  const hips = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.35), darkMat); hips.position.y = 0.72; g.add(hips);
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.75, 16), clothMat); torso.position.y = 1.15; g.add(torso);
+  const chestPanel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.04), whiteMat); chestPanel.position.set(0, 1.25, 0.3); g.add(chestPanel);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.14, 12), skinMat); neck.position.y = 1.6; g.add(neck);
 
+  /* Kepala: bola kulit + rambut + mata (kedip via scale). */
   const headG = new THREE.Group(); headG.position.y = 1.86; g.add(headG); P.headG = headG;
-  headG.add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.55, 0.55), bodyMat));
+  headG.add(new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 18), skinMat));
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.335, 24, 18), hairMat);
+  hair.scale.set(1, 0.82, 0.92); hair.position.set(0, 0.09, -0.08); headG.add(hair);
+  const mkEye = (sx) => {
+    const e = new THREE.Group(); e.position.set(0.12 * sx, 0.03, 0.28);
+    e.add(new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16), whiteMat));
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), pupilMat); p.position.z = 0.055; e.add(p);
+    headG.add(e); return e;
+  };
+  P.eyeL = mkEye(-1); P.eyeR = mkEye(1);
 
-  if (cfg.id !== "Jaka") {
-    const mkEye = (sx) => {
-      const e = new THREE.Group(); e.position.set(0.15 * sx, 0.04, 0.28);
-      e.add(new THREE.Mesh(new THREE.SphereGeometry(0.095, 16, 16), whiteMat));
-      const p = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 12), pupilMat); p.position.z = 0.07; e.add(p);
-      headG.add(e); return e;
-    };
-    P.eyeL = mkEye(-1); P.eyeR = mkEye(1);
-  }
-
+  /* Lengan: pivot bahu, lengan pakaian aksen, tangan kulit. */
   const mkArm = (sx) => {
-    const piv = new THREE.Group(); piv.position.set(0.53 * sx, 1.5, 0);
-    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.66, 12), darkMat); a.position.y = -0.33; piv.add(a);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), accentMat); hand.position.y = -0.68; piv.add(hand);
+    const piv = new THREE.Group(); piv.position.set(0.36 * sx, 1.48, 0);
+    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 12), clothMat); a.position.y = -0.25; piv.add(a);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), skinMat); hand.position.y = -0.52; piv.add(hand);
     g.add(piv); return piv;
   };
   P.armL = mkArm(-1); P.armR = mkArm(1);
 
+  /* Kaki: paha (pivot pinggul) + betis (pivot lutut) + sepatu.
+     Sudutnya di-lerp di animate(): duduk = paha -1,35 / betis +1,35. */
   const mkLeg = (sx) => {
-    const l = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.72, 0.24), darkMat); l.position.set(0.2 * sx, 0.36, 0); g.add(l);
-    const f = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.34), darkMat); f.position.set(0.2 * sx, 0.06, 0.05); g.add(f);
+    const thigh = new THREE.Group(); thigh.position.set(0.16 * sx, 0.72, 0); g.add(thigh);
+    const th = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.34, 0.17), darkMat); th.position.y = -0.17; thigh.add(th);
+    const knee = new THREE.Group(); knee.position.y = -0.34; thigh.add(knee);
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.34, 0.15), darkMat); sh.position.y = -0.17; knee.add(sh);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.09, 0.28), darkMat); foot.position.set(0, -0.36, 0.05); knee.add(foot);
+    return { thigh, knee };
   };
-  mkLeg(-1); mkLeg(1);
+  const legL = mkLeg(-1), legR = mkLeg(1);
+  P.thighL = legL.thigh; P.kneeL = legL.knee; P.thighR = legR.thigh; P.kneeR = legR.knee;
 
   /* --- Aksesori per agent --- */
   if (cfg.id === "Mu") {
     const beret = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.33, 0.09, 18),
       new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.6 }));
     beret.position.set(-0.08, 0.34, -0.04); beret.rotation.z = 0.28; beret.rotation.x = -0.1; headG.add(beret);
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), hairMat);
+    bun.position.set(-0.1, 0.32, -0.08); headG.add(bun);
     const stylus = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.42, 10),
       new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.4 }));
-    stylus.position.set(0, -0.68, 0.1); stylus.rotation.x = 0.5; P.armR.add(stylus);
+    stylus.position.set(0, -0.52, 0.1); stylus.rotation.x = 0.5; P.armR.add(stylus);
     const tablet = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.04, 0.5),
       new THREE.MeshStandardMaterial({ color: 0x1c1c21, roughness: 0.4 }));
     tablet.position.set(0, 1.02, 0.62); tablet.rotation.x = -0.22; g.add(tablet);
@@ -719,28 +742,39 @@ function buildRobot(cfg) {
     rec.position.set(0.2, 0.36, 0.12); headG.add(rec);
   }
   if (cfg.id === "Jaka") {
-    const lensG = new THREE.Group(); lensG.position.set(0, 0.02, 0.3); headG.add(lensG); P.lensG = lensG;
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.3, 20), darkMat);
+    /* Kamera kecil di dada (lensa berdenyut saat memeriksa) + kacamata. */
+    const lensG = new THREE.Group(); lensG.position.set(0, 1.32, 0.34); g.add(lensG); P.lensG = lensG;
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.24, 20), darkMat);
     barrel.rotation.x = Math.PI / 2; lensG.add(barrel);
-    const glass = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24),
+    const glass = new THREE.Mesh(new THREE.CircleGeometry(0.1, 24),
       new THREE.MeshStandardMaterial({ color: 0x0e1626, roughness: 0.15, metalness: 0.65 }));
-    glass.position.z = 0.155; lensG.add(glass);
-    const glint = new THREE.Mesh(new THREE.CircleGeometry(0.032, 12),
+    glass.position.z = 0.13; lensG.add(glass);
+    const glint = new THREE.Mesh(new THREE.CircleGeometry(0.028, 12),
       new THREE.MeshBasicMaterial({ color: 0xbfe9ff }));
-    glint.position.set(0.045, 0.05, 0.158); lensG.add(glint);
+    glint.position.set(0.04, 0.04, 0.132); lensG.add(glint);
+    [-1, 1].forEach((sx) => {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.015, 8, 20), darkMat);
+      rim.position.set(0.12 * sx, 0.03, 0.3); headG.add(rim);
+    });
   }
   if (cfg.id === "Tono") {
-    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), darkMat);
-    ant.position.set(0.16, 0.52, 0); headG.add(ant);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.1, 18),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }));
+    cap.position.set(0, 0.3, 0); headG.add(cap);
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.2),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }));
+    brim.position.set(0, 0.27, 0.3); headG.add(brim);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8), darkMat);
+    ant.position.set(0.16, 0.5, 0); headG.add(ant);
     const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.2 }));
-    tip.position.set(0.16, 0.79, 0); headG.add(tip);
+    tip.position.set(0.16, 0.72, 0); headG.add(tip);
     const mag = new THREE.Group();
     mag.add(new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.028, 10, 24),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })));
     const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8), darkMat);
     handle.position.y = -0.28; mag.add(handle);
-    mag.position.set(0, -0.72, 0.14); P.armR.add(mag);
+    mag.position.set(0, -0.55, 0.14); P.armR.add(mag);
   }
   if (cfg.id === "Dani") {
     const kb = new THREE.Group();
@@ -751,11 +785,11 @@ function buildRobot(cfg) {
       const key = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 0.1), keyMat);
       key.position.set(-0.34 + cI * 0.17, 0.045, -0.07 + rI * 0.16); kb.add(key);
     }
-    kb.position.set(0, 1.32, 0.95); g.add(kb);
+    kb.position.set(0, 1.0, 0.95); g.add(kb);
   }
 
-  /* Cincin status di lantai — dibuat di SCENE (bukan anak grup robot),
-     supaya tidak ikut tenggelam saat robot duduk (grup y=-0,34).
+  /* Cincin status di lantai — dibuat di SCENE (bukan anak grup),
+     supaya tidak ikut tenggelam saat figur duduk.
      Posisi x/z-nya diperbarui tiap frame di animate(). */
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(0.55, 0.74, 40),
@@ -779,6 +813,15 @@ function buildRobot(cfg) {
 }
 
 /* ---------- Ruangan ---------- */
+function drawFloorTexture() {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 352;
+  const x = c.getContext("2d");
+  const cols = ["#efe7d6", "#dfe8d8"];
+  for (let ty = 0; ty < 6; ty++) for (let tx = 0; tx < 8; tx++) {
+    x.fillStyle = cols[(tx + ty) % 2]; x.fillRect(tx * 64, ty * 64, 64, 64);
+  }
+  return new THREE.CanvasTexture(c);
+}
 function drawCityTexture() {
   const c = document.createElement("canvas"); c.width = 512; c.height = 256;
   const x = c.getContext("2d");
@@ -815,8 +858,8 @@ function drawCode() {
   codeTex.needsUpdate = true;
 }
 function pushCodeLine() {
-  const seeds = ["await api.queue(prompt);", "syncRobots(state);", "lamp.color.set(ok);", "orbit.update(dt);",
-    "raycast agents…", "hop(robot, 2);", "// idle: sway", "theta += dx*0.005;"];
+  const seeds = ["await api.queue(prompt);", "syncFigures(state);", "lamp.color.set(ok);", "orbit.update(dt);",
+    "raycast agents…", "hop(figure, 2);", "// idle: sway", "theta += dx*0.005;"];
   const cols = ["#7dd3fc", "#c4b5fd", "#86efac", "#fca5a5", "#fcd34d"];
   codeLines.shift();
   codeLines.push({ t: seeds[Math.floor(Math.random() * seeds.length)], c: cols[Math.floor(Math.random() * cols.length)] });
@@ -847,18 +890,24 @@ function drawChart() {
 
 function buildRoom() {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
-    new THREE.MeshStandardMaterial({ color: 0xefe7d6, roughness: 0.85, metalness: 0.0 }));
+    new THREE.MeshStandardMaterial({ map: drawFloorTexture(), roughness: 0.85, metalness: 0.0 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = shadowsOn; scene.add(floor);
-  /* Grid lantai halus, memberi kesan mengkilap tanpa refleksi mahal. */
-  const grid = new THREE.GridHelper(26, 26, 0xd8cfbc, 0xe6ddc9);
-  grid.position.y = 0.01; grid.material.transparent = true; grid.material.opacity = 0.35; scene.add(grid);
 
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xf6efe2, roughness: 1 });
-  const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 9), wallMat);
+  const backWallMat = new THREE.MeshStandardMaterial({ color: 0xd8e6d5, roughness: 1 });
+  const sideWallMat = new THREE.MeshStandardMaterial({ color: 0xf3ddd2, roughness: 1 });
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 9), backWallMat);
   back.position.set(0, 4.5, -6.5); scene.add(back);
   [-1, 1].forEach((s) => {
-    const side = new THREE.Mesh(new THREE.PlaneGeometry(18, 9), wallMat);
+    const side = new THREE.Mesh(new THREE.PlaneGeometry(18, 9), sideWallMat);
     side.position.set(13 * s, 4.5, 0); side.rotation.y = -s * Math.PI / 2; scene.add(side);
+  });
+  /* Lis bawah dinding. */
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0xfbf8f1, roughness: 0.7 });
+  const baseB = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 0.08), baseMat);
+  baseB.position.set(0, 0.15, -6.44); scene.add(baseB);
+  [-1, 1].forEach((s) => {
+    const baseS = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 18), baseMat);
+    baseS.position.set(12.94 * s, 0.15, 0); scene.add(baseS);
   });
 
   const win = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.4),
@@ -868,14 +917,56 @@ function buildRoom() {
     new THREE.MeshStandardMaterial({ color: 0xe0d5c0, roughness: 0.8 }));
   winFrame.position.set(0, 3.2, -6.5); scene.add(winFrame);
 
-  /* Karpet pastel di bawah area meja. */
+  /* Jendela kedua di dinding kiri (langit yang sama). */
+  const win2Frame = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 3.8),
+    new THREE.MeshStandardMaterial({ color: 0xe0d5c0, roughness: 0.8 }));
+  win2Frame.position.set(-12.97, 3.2, 0); win2Frame.rotation.y = Math.PI / 2; scene.add(win2Frame);
+  const win2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 3.4),
+    new THREE.MeshBasicMaterial({ map: drawCityTexture() }));
+  win2.position.set(-12.94, 3.2, 0); win2.rotation.y = Math.PI / 2; scene.add(win2);
+
+  /* Rak buku di dinding belakang kiri. */
+  const shelfMat = new THREE.MeshStandardMaterial({ color: 0xc9a06c, roughness: 0.7 });
+  const shelf = new THREE.Group();
+  const shelfBack = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.8, 0.12), shelfMat);
+  shelfBack.position.y = 1.4; shelf.add(shelfBack);
+  [0.7, 1.5, 2.3].forEach((sy) => {
+    const board = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.5), shelfMat);
+    board.position.set(0, sy, 0.25); shelf.add(board);
+  });
+  const bookCols = [0xef4444, 0x38bdf8, 0xf59e0b, 0x34d399, 0xa855f7, 0xec4899];
+  for (let bi = 0; bi < 12; bi++) {
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55 + (bi % 3) * 0.08, 0.34),
+      new THREE.MeshStandardMaterial({ color: bookCols[bi % 6], roughness: 0.8 }));
+    bk.position.set(-1.45 + bi * 0.26, 1.0 + (bi % 3) * 0.04, 0.25); shelf.add(bk);
+  }
+  shelf.position.set(-8.5, 0, -6.1); scene.add(shelf);
+
+  /* Papan tulis di dinding kanan + sticky notes. */
+  const wbFrame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.6, 4.4),
+    new THREE.MeshStandardMaterial({ color: 0xc9a06c, roughness: 0.7 }));
+  wbFrame.position.set(12.96, 3.0, 2); scene.add(wbFrame);
+  const wb = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 2.4),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
+  wb.position.set(12.9, 3.0, 2); wb.rotation.y = -Math.PI / 2; scene.add(wb);
+  [0xfde047, 0x93c5fd, 0xf9a8d4, 0x86efac, 0xfca5a5].forEach((nc, ni) => {
+    const note = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42),
+      new THREE.MeshStandardMaterial({ color: nc, roughness: 0.9 }));
+    note.position.set(12.88, 3.5 - (ni % 3) * 0.55, 0.6 + ni * 0.62);
+    note.rotation.y = -Math.PI / 2; scene.add(note);
+  });
+
+  /* Karpet pastel di bawah area meja + pinggir karpet. */
+  const rugBorder = new THREE.Mesh(new THREE.PlaneGeometry(13.3, 9.3),
+    new THREE.MeshStandardMaterial({ color: 0xe8c9a8, roughness: 0.95 }));
+  rugBorder.rotation.x = -Math.PI / 2; rugBorder.position.set(0, 0.002, 1.6); rugBorder.receiveShadow = shadowsOn; scene.add(rugBorder);
   const rug = new THREE.Mesh(new THREE.PlaneGeometry(12.5, 8.5),
     new THREE.MeshStandardMaterial({ color: 0xf3e3d3, roughness: 0.95 }));
   rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.005, 1.6); rug.receiveShadow = shadowsOn; scene.add(rug);
 
   /* 6 meja individual (2 baris x 3), masing-masing dengan monitor + kursi. */
-  const deskMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
-  const deskEdgeMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc4, roughness: 0.7 });
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0xd9b48a, roughness: 0.6 });
+  const deskEdgeMat = new THREE.MeshStandardMaterial({ color: 0xb98d5f, roughness: 0.7 });
   const chairMat = new THREE.MeshStandardMaterial({ color: 0x8fb8a8, roughness: 0.8 });
   ROSTER.forEach((cfg, di) => {
     const d = deskOf(cfg);
@@ -902,14 +993,14 @@ function buildRoom() {
     sx2.globalAlpha = 1;
     const scrTex = new THREE.CanvasTexture(scrCanvas);
     const grp = new THREE.Group();
-    const shell = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.72, 0.07),
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.92, 0.07),
       new THREE.MeshStandardMaterial({ color: 0x3a3f4a, roughness: 0.6 }));
-    shell.position.y = 0.36; grp.add(shell);
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.02, 0.6), new THREE.MeshBasicMaterial({ map: scrTex }));
-    scr.position.set(0, 0.36, 0.04); grp.add(scr);
-    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.28, 0.1),
+    shell.position.y = 0.46; grp.add(shell);
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 0.78), new THREE.MeshBasicMaterial({ map: scrTex }));
+    scr.position.set(0, 0.46, 0.04); grp.add(scr);
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.12),
       new THREE.MeshStandardMaterial({ color: 0x3a3f4a }));
-    stand.position.y = -0.14; grp.add(stand);
+    stand.position.y = -0.15; grp.add(stand);
     grp.position.set(d.x, 1.26, d.row.deskZ - 0.32); scene.add(grp);
   });
 
@@ -1008,7 +1099,7 @@ function onCanvasClick(e) {
   const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   const ny = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera({ x: nx, y: ny }, camera);
-  const hits = raycaster.intersectObjects(robotRoots, true);
+  const hits = raycaster.intersectObjects(figureRoots, true);
   if (hits.length) {
     let o = hits[0].object;
     while (o && !o.userData.agentId) o = o.parent;
@@ -1017,15 +1108,15 @@ function onCanvasClick(e) {
 }
 
 /* ---------- Sinkronisasi data → 3D (tanpa rebuild) ---------- */
-function syncRobots() {
+function syncFigures() {
   if (!threeReady || !state || !Array.isArray(state.agents)) return;
   ROSTER.forEach((cfg, i) => {
-    const r = robots3D[cfg.id]; if (!r) return;
+    const r = figures3D[cfg.id]; if (!r) return;
     const a = state.agents.find((x) => x.id === cfg.id);
     const paused = !!(a && (a.paused || (state.paused_agents && state.paused_agents[cfg.id])));
     const working = !paused && !!a && a.status === "working";
     const d = deskOf(cfg);
-    if (working) { r.userData.target.pos.set(d.x, -0.34, d.row.seatZ); r.userData.target.rotY = Math.PI; }
+    if (working) { r.userData.target.pos.set(d.x, -0.15, d.row.seatZ); r.userData.target.rotY = Math.PI; }
     else { r.userData.target.pos.set(d.x, 0, d.row.idleZ); r.userData.target.rotY = 0; }
     refreshBubble(r, cfg, a, paused);
     if (r.userData.paused !== paused) { r.userData.paused = paused; refreshLabel(r, cfg); }
@@ -1057,8 +1148,8 @@ function animate() {
   const k = 1 - Math.exp(-4 * dt);
   smoothCamera(dt);
 
-  Object.keys(robots3D).forEach((id) => {
-    const r = robots3D[id], u = r.userData, P = u.parts, tp = u.target;
+  Object.keys(figures3D).forEach((id) => {
+    const r = figures3D[id], u = r.userData, P = u.parts, tp = u.target;
     r.position.x += (tp.pos.x - r.position.x) * k;
     r.position.z += (tp.pos.z - r.position.z) * k;
     let yOff = 0;
@@ -1070,7 +1161,16 @@ function animate() {
     let yT = tp.pos.y + yOff;
     if (!u.working && !u.paused) yT += Math.sin(t * 1.6 + u.phase) * 0.03;
     r.position.y += (yT - r.position.y) * k;
-    /* Cincin status: tetap di lantai mengikuti x/z robot (bukan anak grup),
+    /* Kaki: duduk (paha ke depan, betis tegak) saat working, lurus saat idle. */
+    if (P.thighL) {
+      const legT = u.working ? -1.35 : 0;
+      P.thighL.rotation.x += (legT - P.thighL.rotation.x) * k;
+      P.thighR.rotation.x += (legT - P.thighR.rotation.x) * k;
+      const kneeT = u.working ? 1.35 : 0;
+      P.kneeL.rotation.x += (kneeT - P.kneeL.rotation.x) * k;
+      P.kneeR.rotation.x += (kneeT - P.kneeR.rotation.x) * k;
+    }
+    /* Cincin status: tetap di lantai mengikuti x/z figur (bukan anak grup),
        berdenyut saat working; diam saat idle/paused. */
     if (P.ring) {
       const pulse = u.working && !u.paused ? 1 + Math.sin(t * 3.5) * 0.07 : 1;
@@ -1157,7 +1257,7 @@ function init3D() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0xf2ecdf, 22, 40);
-  camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
   raycaster = new THREE.Raycaster();
   clk = new THREE.Clock();
   applyCamera();
@@ -1173,14 +1273,14 @@ function init3D() {
     key.shadow.camera.near = 1; key.shadow.camera.far = 30;
     key.shadow.bias = -0.0005;
   }
-  /* Lampu rim biru dingin dari belakang-kiri, supaya siluet robot tidak rata. */
+  /* Lampu rim biru dingin dari belakang-kiri, supaya siluet figur tidak rata. */
   const rim = new THREE.DirectionalLight(0x9fd8ff, 0.35); rim.position.set(-7, 6, -6); scene.add(rim);
   const warm = new THREE.PointLight(0xffd9a0, 0.4, 22); warm.position.set(0, 4.5, 1.5); scene.add(warm);
 
   buildRoom();
   ROSTER.forEach((cfg) => {
-    const r = buildRobot(cfg);
-    robots3D[cfg.id] = r; robotRoots.push(r); scene.add(r);
+    const r = buildHuman(cfg);
+    figures3D[cfg.id] = r; figureRoots.push(r); scene.add(r);
   });
 
   initControls(canvas);
