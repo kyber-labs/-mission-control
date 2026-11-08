@@ -125,7 +125,7 @@ details.sys summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:13px
 .log-line{padding:8px 12px;background:#fbf8f1;border:1px solid #e8e0cd;border-radius:8px;font-size:12.5px;color:#4a4a55;word-break:break-word}
 /* ---------- 3D office ---------- */
 #view-office{padding:0}
-#gl-wrap{position:relative;width:100%;height:calc(100vh - var(--topbar-h) - 48px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#f2ecdf}
+#gl-wrap{position:relative;width:100%;height:calc(100vh - var(--topbar-h) - 48px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#f0e9d8}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #gl:active{cursor:grabbing}
 #office-hud{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.85);border:1px solid rgba(60,50,30,.14);border-radius:10px;padding:8px 13px;font-size:12.5px;color:var(--muted);pointer-events:none;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(60,50,30,.18)}
@@ -216,24 +216,24 @@ function loadingHTML() { return '<div class="empty"><div class="big">⏳</div>Me
 
 /* ---------------- Roster (statis, sesuai konfigurasi) ---------------- */
 const ROSTER = [
-  { id: "Anca", role: "Project Manager / General", color: 0x38bdf8, css: "#38bdf8",
+  { id: "Anca", role: "Project Manager / General", color: 0x38bdf8, css: "#38bdf8", muted: 0x5b7fa6,
     caps: ["Koordinasi & delegasi task antar-agent", "Monitoring progres dan status", "General purpose / serbaguna"],
-    visual: "Figur manusia chibi berambut biru, pakaian biru langit, tanpa aksesori khusus." },
-  { id: "Mu", role: "Graphic Designer", color: 0xa855f7, css: "#a855f7",
+    visual: "Figur voxel berkepala kubus, rambut dan pakaian biru muted, tanpa aksesori khusus." },
+  { id: "Mu", role: "Graphic Designer", color: 0xa855f7, css: "#a855f7", muted: 0x8a7bb8,
     caps: ["Desain grafis & ilustrasi", "Komposisi visual & layout", "Aset gambar untuk konten"],
-    visual: "Figur manusia chibi berambut ungu dengan baret ungu miring, stylus di tangan kanan, drawing tablet di atas meja." },
-  { id: "Cipu", role: "Video Editor", color: 0xef4444, css: "#ef4444",
+    visual: "Figur voxel berkepala kubus, rambut ungu muted dengan baret ungu miring, stylus di tangan kanan, drawing tablet di atas meja." },
+  { id: "Cipu", role: "Video Editor", color: 0xef4444, css: "#ef4444", muted: 0xc96f5e,
     caps: ["Editing & cutting video", "Color grading dasar", "Render & ekspor"],
-    visual: "Figur manusia chibi berambut merah dengan headphone merah dan lampu indikator REC yang berkedip." },
-  { id: "Jaka", role: "QC Visual", color: 0x22d3ee, css: "#22d3ee",
+    visual: "Figur voxel berkepala kubus, rambut merah muted dengan headphone merah dan lampu indikator REC yang berkedip." },
+  { id: "Jaka", role: "QC Visual", color: 0x22d3ee, css: "#22d3ee", muted: 0x6fae7a,
     caps: ["Quality control visual", "Review detail & ketelitian", "Verifikasi hasil akhir"],
-    visual: "Figur manusia chibi berambut hijau dengan kamera kecil di dada (lensa berdenyut saat memeriksa) dan kacamata." },
-  { id: "Tono", role: "Riset", color: 0xf59e0b, css: "#f59e0b",
+    visual: "Figur voxel berkepala kubus, rambut hijau muted dengan kamera kotak kecil di dada (lensa berdenyut saat memeriksa) dan kacamata." },
+  { id: "Tono", role: "Riset", color: 0xf59e0b, css: "#f59e0b", muted: 0xd9b36a,
     caps: ["Riset & pengumpulan informasi", "Analisis & sintesis temuan", "Laporan hasil riset"],
-    visual: "Figur manusia chibi berambut pirang bertopi kuning, kaca pembesar di tangan." },
-  { id: "Dani", role: "Coding", color: 0x34d399, css: "#34d399",
+    visual: "Figur voxel berkepala kubus, rambut pirang bertopi kuning, kaca pembesar kotak di tangan." },
+  { id: "Dani", role: "Coding", color: 0x34d399, css: "#34d399", muted: 0x5aa8a0,
     caps: ["Penulisan & perbaikan kode", "Debugging", "Implementasi fitur"],
-    visual: "Figur manusia chibi berambut teal dengan keyboard mini hijau di atas meja." }
+    visual: "Figur voxel berkepala kubus, rambut teal muted dengan keyboard mini di atas meja." }
 ];
 
 const VIEWS = [
@@ -560,7 +560,7 @@ var orbit = { tx: 0, ty: 1.3, tz: 1.6, r: 15.5, theta: 0.55, phi: 0.98 };
 /* Kamera halus: orbit = target, orbitCur = posisi kamera yang dihaluskan tiap frame (sapuan pembuka dari jauh). */
 var orbitCur = { tx: 0, ty: 1.3, tz: 1.6, r: 18.5, theta: 1.15, phi: 1.18 };
 var shadowsOn = (typeof window !== "undefined" && window.innerWidth >= 900);
-/* Layout kantor gaya video: 6 meja individual, 2 baris x 3 kolom.
+/* Layout kantor v4 gaya The Agency (clean): 6 meja individual, 2 baris x 3 kolom.
    Baris depan (Anca, Mu, Cipu) dan baris belakang (Jaka, Tono, Dani)
    sama-sama menghadap dinding (-z). Figur duduk di seatZ saat working,
    berdiri di idleZ (lorong) saat idle. */
@@ -656,53 +656,53 @@ function refreshBubble(r, cfg, a, paused) {
   r.add(r.userData.bubble);
 }
 
-/* ---------- Human builder (figur manusia chibi) ----------
-   Proporsi dijaga setinggi robot lama (kepala di y 1,86) supaya label,
+/* ---------- Voxel builder (figur kepala kubus, gaya The Agency v4) ----------
+   Proporsi dijaga setinggi chibi lama (kepala di y 1,86) supaya label,
    bubble, cincin, dan semua animasi (kedip, ketik, goyang, hop) tetap jalan.
-   Saat working, kaki ditekuk (paha ke depan, betis tegak) seperti duduk;
-   saat idle, kaki lurus berdiri. */
+   Semua geometri kotak; pakaian/rambut warna aksen versi MUTED supaya
+   tidak bertabrakan — warna aksen murni hanya di cincin/label/bubble. */
 const SKIN_TONES = [0xf2c9a0, 0xe8b88a, 0xf0c8a0, 0xd9a066, 0xeab98c, 0xc98d5f];
-const HAIR_COLORS = [0x3b82f6, 0x8b5cf6, 0xef4444, 0x22c55e, 0xfbbf24, 0x14b8a6];
-function buildHuman(cfg) {
+function buildVoxel(cfg) {
   const g = new THREE.Group();
   const idx = ROSTER.findIndex((r) => r.id === cfg.id);
   const skinMat = new THREE.MeshStandardMaterial({ color: SKIN_TONES[idx < 0 ? 0 : idx], roughness: 0.6 });
-  const hairMat = new THREE.MeshStandardMaterial({ color: HAIR_COLORS[idx < 0 ? 0 : idx], roughness: 0.7 });
-  const clothMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.6 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: cfg.muted, roughness: 0.7 });
+  const clothMat = new THREE.MeshStandardMaterial({ color: cfg.muted, roughness: 0.6 });
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x3a404c, roughness: 0.7, metalness: 0.25 });
   const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
   const pupilMat = new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.3 });
   const P = {};
 
-  /* Badan: pinggul, torso pakaian aksen, panel dada terang, leher. */
+  /* Badan: pinggul + torso kotak pakaian muted + panel dada + leher kotak. */
   const hips = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.35), darkMat); hips.position.y = 0.72; g.add(hips);
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.75, 16), clothMat); torso.position.y = 1.15; g.add(torso);
-  const chestPanel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.04), whiteMat); chestPanel.position.set(0, 1.25, 0.3); g.add(chestPanel);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.14, 12), skinMat); neck.position.y = 1.6; g.add(neck);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.7, 0.32), clothMat); torso.position.y = 1.15; g.add(torso);
+  const chestPanel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.04), whiteMat); chestPanel.position.set(0, 1.25, 0.18); g.add(chestPanel);
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.16), skinMat); neck.position.y = 1.57; g.add(neck);
 
-  /* Kepala: bola kulit + rambut + mata (kedip via scale). */
+  /* Kepala: kubus kulit + topi rambut kotak + mata kotak (kedip via scale). */
   const headG = new THREE.Group(); headG.position.y = 1.86; g.add(headG); P.headG = headG;
-  headG.add(new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 18), skinMat));
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.335, 24, 18), hairMat);
-  hair.scale.set(1, 0.82, 0.92); hair.position.set(0, 0.09, -0.08); headG.add(hair);
+  headG.add(new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.52, 0.52), skinMat));
+  const hairCap = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.16, 0.56), hairMat);
+  hairCap.position.y = 0.26; headG.add(hairCap);
+  const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.34, 0.1), hairMat);
+  hairBack.position.set(0, 0.06, -0.24); headG.add(hairBack);
   const mkEye = (sx) => {
-    const e = new THREE.Group(); e.position.set(0.12 * sx, 0.03, 0.28);
-    e.add(new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16), whiteMat));
-    const p = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), pupilMat); p.position.z = 0.055; e.add(p);
+    const e = new THREE.Group(); e.position.set(0.12 * sx, 0.02, 0.27);
+    e.add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.11, 0.02), pupilMat));
     headG.add(e); return e;
   };
   P.eyeL = mkEye(-1); P.eyeR = mkEye(1);
 
-  /* Lengan: pivot bahu, lengan pakaian aksen, tangan kulit. */
+  /* Lengan: pivot bahu, lengan kotak pakaian muted, tangan kotak kulit. */
   const mkArm = (sx) => {
     const piv = new THREE.Group(); piv.position.set(0.36 * sx, 1.48, 0);
-    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 12), clothMat); a.position.y = -0.25; piv.add(a);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), skinMat); hand.position.y = -0.52; piv.add(hand);
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.14), clothMat); a.position.y = -0.25; piv.add(a);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.14, 0.15), skinMat); hand.position.y = -0.52; piv.add(hand);
     g.add(piv); return piv;
   };
   P.armL = mkArm(-1); P.armR = mkArm(1);
 
-  /* Kaki: paha (pivot pinggul) + betis (pivot lutut) + sepatu.
+  /* Kaki: paha (pivot pinggul) + betis (pivot lutut) + sepatu kotak.
      Sudutnya di-lerp di animate(): duduk = paha -1,35 / betis +1,35. */
   const mkLeg = (sx) => {
     const thigh = new THREE.Group(); thigh.position.set(0.16 * sx, 0.72, 0); g.add(thigh);
@@ -715,14 +715,14 @@ function buildHuman(cfg) {
   const legL = mkLeg(-1), legR = mkLeg(1);
   P.thighL = legL.thigh; P.kneeL = legL.knee; P.thighR = legR.thigh; P.kneeR = legR.knee;
 
-  /* --- Aksesori per agent --- */
+  /* --- Aksesori per agent (semua kotak) --- */
   if (cfg.id === "Mu") {
-    const beret = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.33, 0.09, 18),
+    const beret = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.5),
       new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.6 }));
-    beret.position.set(-0.08, 0.34, -0.04); beret.rotation.z = 0.28; beret.rotation.x = -0.1; headG.add(beret);
-    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), hairMat);
-    bun.position.set(-0.1, 0.32, -0.08); headG.add(bun);
-    const stylus = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.42, 10),
+    beret.position.set(-0.08, 0.36, -0.04); beret.rotation.z = 0.28; beret.rotation.x = -0.1; headG.add(beret);
+    const bun = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), hairMat);
+    bun.position.set(-0.12, 0.34, -0.1); headG.add(bun);
+    const stylus = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.42, 0.05),
       new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.4 }));
     stylus.position.set(0, -0.52, 0.1); stylus.rotation.x = 0.5; P.armR.add(stylus);
     const tablet = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.04, 0.5),
@@ -730,49 +730,52 @@ function buildHuman(cfg) {
     tablet.position.set(0, 1.02, 0.62); tablet.rotation.x = -0.22; g.add(tablet);
   }
   if (cfg.id === "Cipu") {
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.055, 12, 24), darkMat);
-    band.position.y = 0.06; band.rotation.y = Math.PI / 2; headG.add(band);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.6), darkMat);
+    band.position.y = 0.3; headG.add(band);
     [-1, 1].forEach((sx) => {
-      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.09, 16),
+      const cup = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.2),
         new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 }));
-      cup.position.set(0.33 * sx, 0, 0); cup.rotation.z = Math.PI / 2; headG.add(cup);
+      cup.position.set(0.3 * sx, 0, 0); headG.add(cup);
     });
     P.recMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.6 });
-    const rec = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), P.recMat);
+    const rec = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.09), P.recMat);
     rec.position.set(0.2, 0.36, 0.12); headG.add(rec);
   }
   if (cfg.id === "Jaka") {
-    /* Kamera kecil di dada (lensa berdenyut saat memeriksa) + kacamata. */
-    const lensG = new THREE.Group(); lensG.position.set(0, 1.32, 0.34); g.add(lensG); P.lensG = lensG;
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.24, 20), darkMat);
-    barrel.rotation.x = Math.PI / 2; lensG.add(barrel);
-    const glass = new THREE.Mesh(new THREE.CircleGeometry(0.1, 24),
+    /* Kamera kotak di dada (lensa berdenyut saat memeriksa) + kacamata. */
+    const lensG = new THREE.Group(); lensG.position.set(0, 1.32, 0.28); g.add(lensG); P.lensG = lensG;
+    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.22), darkMat);
+    lensG.add(barrel);
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.18),
       new THREE.MeshStandardMaterial({ color: 0x0e1626, roughness: 0.15, metalness: 0.65 }));
-    glass.position.z = 0.13; lensG.add(glass);
-    const glint = new THREE.Mesh(new THREE.CircleGeometry(0.028, 12),
+    glass.position.z = 0.12; lensG.add(glass);
+    const glint = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.05),
       new THREE.MeshBasicMaterial({ color: 0xbfe9ff }));
-    glint.position.set(0.04, 0.04, 0.132); lensG.add(glint);
+    glint.position.set(0.04, 0.04, 0.122); lensG.add(glint);
     [-1, 1].forEach((sx) => {
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.015, 8, 20), darkMat);
-      rim.position.set(0.12 * sx, 0.03, 0.3); headG.add(rim);
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, 0.02), darkMat);
+      rim.position.set(0.12 * sx, 0.1, 0.28); headG.add(rim);
     });
   }
   if (cfg.id === "Tono") {
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.1, 18),
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.12, 0.54),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }));
     cap.position.set(0, 0.3, 0); headG.add(cap);
-    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.2),
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.03, 0.22),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 }));
-    brim.position.set(0, 0.27, 0.3); headG.add(brim);
-    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8), darkMat);
+    brim.position.set(0, 0.26, 0.3); headG.add(brim);
+    const ant = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), darkMat);
     ant.position.set(0.16, 0.5, 0); headG.add(ant);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12),
+    const tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 1.2 }));
     tip.position.set(0.16, 0.72, 0); headG.add(tip);
     const mag = new THREE.Group();
-    mag.add(new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.028, 10, 24),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })));
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 8), darkMat);
+    const magMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+    const magTop = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.04), magMat); magTop.position.y = 0.15; mag.add(magTop);
+    const magBot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.04), magMat); magBot.position.y = -0.15; mag.add(magBot);
+    const magL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.04), magMat); magL.position.x = -0.15; mag.add(magL);
+    const magR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.04), magMat); magR.position.x = 0.15; mag.add(magR);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.05), darkMat);
     handle.position.y = -0.28; mag.add(handle);
     mag.position.set(0, -0.55, 0.14); P.armR.add(mag);
   }
@@ -816,7 +819,7 @@ function buildHuman(cfg) {
 function drawFloorTexture() {
   const c = document.createElement("canvas"); c.width = 512; c.height = 352;
   const x = c.getContext("2d");
-  const cols = ["#efe7d6", "#dfe8d8"];
+  const cols = ["#e9dcc3", "#ded0b4"];
   for (let ty = 0; ty < 6; ty++) for (let tx = 0; tx < 8; tx++) {
     x.fillStyle = cols[(tx + ty) % 2]; x.fillRect(tx * 64, ty * 64, 64, 64);
   }
@@ -888,13 +891,71 @@ function drawChart() {
   wave("#38bdf8", 30, 2, chartPhase);
 }
 
+function drawWorldMapTexture() {
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256;
+  const x = c.getContext("2d");
+  x.fillStyle = "#101827"; x.fillRect(0, 0, 512, 256);
+  /* Peta dunia titik-titik: gugus elips kasar per benua. */
+  const blobs = [
+    [110, 70, 60, 42], [180, 110, 42, 55], [300, 55, 78, 38], [330, 120, 45, 42],
+    [395, 75, 42, 30], [430, 140, 34, 26], [255, 150, 30, 20]
+  ];
+  x.fillStyle = "#38bdf8";
+  for (let gy = 12; gy < 200; gy += 9) for (let gx = 14; gx < 330; gx += 9) {
+    let inMap = false;
+    for (const b of blobs) {
+      const dx = (gx - b[0]) / b[2], dy = (gy - b[1]) / b[3];
+      if (dx * dx + dy * dy <= 1) { inMap = true; break; }
+    }
+    if (inMap) { x.globalAlpha = 0.55 + Math.random() * 0.45; x.fillRect(gx, gy, 5, 5); }
+  }
+  x.globalAlpha = 1;
+  /* Grafik batang kiri bawah. */
+  const bars = [18, 30, 24, 42, 36, 50, 44];
+  bars.forEach((h, i) => {
+    x.fillStyle = "rgba(56,189,248,0.85)";
+    x.fillRect(20 + i * 18, 232 - h, 11, h);
+  });
+  /* Grafik garis kanan bawah. */
+  x.strokeStyle = "#34d399"; x.lineWidth = 2; x.beginPath();
+  const pts = [[360, 225], [385, 205], [410, 215], [435, 190], [460, 200], [485, 180]];
+  pts.forEach((p, i) => { i === 0 ? x.moveTo(p[0], p[1]) : x.lineTo(p[0], p[1]); });
+  x.stroke();
+  /* Bilah stat kanan atas. */
+  for (let i = 0; i < 4; i++) {
+    x.fillStyle = "rgba(56,189,248,0.35)"; x.fillRect(360, 22 + i * 16, 110, 7);
+    x.fillStyle = "#38bdf8"; x.fillRect(360, 22 + i * 16, 40 + i * 18, 7);
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+/* ---------- Garis jaringan biru di lantai (gaya The Agency) ----------
+   Garis tipis dari tiap meja menuju hub di depan layar besar tengah. */
+function drawNetworkLines() {
+  const hub = new THREE.Vector3(0, 0.015, -4.6);
+  const mat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 });
+  const nodeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+  ROSTER.forEach((cfg) => {
+    const d = deskOf(cfg);
+    const from = new THREE.Vector3(d.x, 0.015, d.row.deskZ + 0.9);
+    const geo = new THREE.BufferGeometry().setFromPoints([from, hub]);
+    scene.add(new THREE.Line(geo, mat));
+    const node = new THREE.Mesh(new THREE.CircleGeometry(0.09, 16), nodeMat);
+    node.rotation.x = -Math.PI / 2; node.position.copy(from); scene.add(node);
+  });
+  const hubNode = new THREE.Mesh(new THREE.CircleGeometry(0.14, 16), nodeMat);
+  hubNode.rotation.x = -Math.PI / 2; hubNode.position.copy(hub); scene.add(hubNode);
+  const up = new THREE.BufferGeometry().setFromPoints([hub, new THREE.Vector3(0, 0.015, -6.3)]);
+  scene.add(new THREE.Line(up, mat));
+}
+
 function buildRoom() {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
     new THREE.MeshStandardMaterial({ map: drawFloorTexture(), roughness: 0.85, metalness: 0.0 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = shadowsOn; scene.add(floor);
 
-  const backWallMat = new THREE.MeshStandardMaterial({ color: 0xd8e6d5, roughness: 1 });
-  const sideWallMat = new THREE.MeshStandardMaterial({ color: 0xf3ddd2, roughness: 1 });
+  const backWallMat = new THREE.MeshStandardMaterial({ color: 0xcfd8c6, roughness: 1 });
+  const sideWallMat = new THREE.MeshStandardMaterial({ color: 0xefe3d0, roughness: 1 });
   const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 9), backWallMat);
   back.position.set(0, 4.5, -6.5); scene.add(back);
   [-1, 1].forEach((s) => {
@@ -910,12 +971,13 @@ function buildRoom() {
     baseS.position.set(12.94 * s, 0.15, 0); scene.add(baseS);
   });
 
-  const win = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.4),
-    new THREE.MeshBasicMaterial({ map: drawCityTexture() }));
-  win.position.set(0, 3.2, -6.44); scene.add(win);
-  const winFrame = new THREE.Mesh(new THREE.BoxGeometry(13.4, 3.8, 0.08),
-    new THREE.MeshStandardMaterial({ color: 0xe0d5c0, roughness: 0.8 }));
-  winFrame.position.set(0, 3.2, -6.5); scene.add(winFrame);
+  /* Layar besar di dinding tengah (gaya The Agency): peta dunia + grafik. */
+  const screenFrame = new THREE.Mesh(new THREE.BoxGeometry(8.6, 4.6, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
+  screenFrame.position.set(0, 3.4, -6.46); scene.add(screenFrame);
+  const bigScreen = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2),
+    new THREE.MeshBasicMaterial({ map: drawWorldMapTexture() }));
+  bigScreen.position.set(0, 3.4, -6.4); scene.add(bigScreen);
 
   /* Jendela kedua di dinding kiri (langit yang sama). */
   const win2Frame = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 3.8),
@@ -925,49 +987,21 @@ function buildRoom() {
     new THREE.MeshBasicMaterial({ map: drawCityTexture() }));
   win2.position.set(-12.94, 3.2, 0); win2.rotation.y = Math.PI / 2; scene.add(win2);
 
-  /* Rak buku di dinding belakang kiri. */
-  const shelfMat = new THREE.MeshStandardMaterial({ color: 0xc9a06c, roughness: 0.7 });
-  const shelf = new THREE.Group();
-  const shelfBack = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.8, 0.12), shelfMat);
-  shelfBack.position.y = 1.4; shelf.add(shelfBack);
-  [0.7, 1.5, 2.3].forEach((sy) => {
-    const board = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.5), shelfMat);
-    board.position.set(0, sy, 0.25); shelf.add(board);
-  });
-  const bookCols = [0xef4444, 0x38bdf8, 0xf59e0b, 0x34d399, 0xa855f7, 0xec4899];
-  for (let bi = 0; bi < 12; bi++) {
-    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55 + (bi % 3) * 0.08, 0.34),
-      new THREE.MeshStandardMaterial({ color: bookCols[bi % 6], roughness: 0.8 }));
-    bk.position.set(-1.45 + bi * 0.26, 1.0 + (bi % 3) * 0.04, 0.25); shelf.add(bk);
-  }
-  shelf.position.set(-8.5, 0, -6.1); scene.add(shelf);
+  /* Jendela ketiga di dinding kanan (simetri, langit siang yang sama). */
+  const win3Frame = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 3.8),
+    new THREE.MeshStandardMaterial({ color: 0xe0d5c0, roughness: 0.8 }));
+  win3Frame.position.set(12.97, 3.2, 0); win3Frame.rotation.y = -Math.PI / 2; scene.add(win3Frame);
+  const win3 = new THREE.Mesh(new THREE.PlaneGeometry(8, 3.4),
+    new THREE.MeshBasicMaterial({ map: drawCityTexture() }));
+  win3.position.set(12.94, 3.2, 0); win3.rotation.y = -Math.PI / 2; scene.add(win3);
 
-  /* Papan tulis di dinding kanan + sticky notes. */
-  const wbFrame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.6, 4.4),
-    new THREE.MeshStandardMaterial({ color: 0xc9a06c, roughness: 0.7 }));
-  wbFrame.position.set(12.96, 3.0, 2); scene.add(wbFrame);
-  const wb = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 2.4),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
-  wb.position.set(12.9, 3.0, 2); wb.rotation.y = -Math.PI / 2; scene.add(wb);
-  [0xfde047, 0x93c5fd, 0xf9a8d4, 0x86efac, 0xfca5a5].forEach((nc, ni) => {
-    const note = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.42),
-      new THREE.MeshStandardMaterial({ color: nc, roughness: 0.9 }));
-    note.position.set(12.88, 3.5 - (ni % 3) * 0.55, 0.6 + ni * 0.62);
-    note.rotation.y = -Math.PI / 2; scene.add(note);
-  });
 
-  /* Karpet pastel di bawah area meja + pinggir karpet. */
-  const rugBorder = new THREE.Mesh(new THREE.PlaneGeometry(13.3, 9.3),
-    new THREE.MeshStandardMaterial({ color: 0xe8c9a8, roughness: 0.95 }));
-  rugBorder.rotation.x = -Math.PI / 2; rugBorder.position.set(0, 0.002, 1.6); rugBorder.receiveShadow = shadowsOn; scene.add(rugBorder);
-  const rug = new THREE.Mesh(new THREE.PlaneGeometry(12.5, 8.5),
-    new THREE.MeshStandardMaterial({ color: 0xf3e3d3, roughness: 0.95 }));
-  rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.005, 1.6); rug.receiveShadow = shadowsOn; scene.add(rug);
+
 
   /* 6 meja individual (2 baris x 3), masing-masing dengan monitor + kursi. */
-  const deskMat = new THREE.MeshStandardMaterial({ color: 0xd9b48a, roughness: 0.6 });
-  const deskEdgeMat = new THREE.MeshStandardMaterial({ color: 0xb98d5f, roughness: 0.7 });
-  const chairMat = new THREE.MeshStandardMaterial({ color: 0x8fb8a8, roughness: 0.8 });
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0x8b5e34, roughness: 0.6 });
+  const deskEdgeMat = new THREE.MeshStandardMaterial({ color: 0x6e4a26, roughness: 0.7 });
+  const chairMat = new THREE.MeshStandardMaterial({ color: 0x6b6257, roughness: 0.8 });
   ROSTER.forEach((cfg, di) => {
     const d = deskOf(cfg);
     const top = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.12, 1.1), deskMat);
@@ -1004,28 +1038,8 @@ function buildRoom() {
     grp.position.set(d.x, 1.26, d.row.deskZ - 0.32); scene.add(grp);
   });
 
-  /* Tanaman tambahan di sudut (gaya video: banyak tanaman). */
-  const leafMat2 = new THREE.MeshStandardMaterial({ color: 0x2f7d4f, roughness: 0.9 });
-  [[-7.6, -4.6], [8.2, 4.8]].forEach(([px, pz]) => {
-    const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.42, 14),
-      new THREE.MeshStandardMaterial({ color: 0xe8b48c, roughness: 0.8 }));
-    p2.position.set(px, 0.21, pz); scene.add(p2);
-    for (let i = 0; i < 4; i++) {
-      const lf = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.95, 8), leafMat2);
-      lf.position.set(px + (i - 1.5) * 0.14, 0.85, pz + ((i % 2) - 0.5) * 0.16);
-      lf.rotation.z = (i - 1.5) * 0.22; scene.add(lf);
-    }
-  });
 
-  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.42, 14),
-    new THREE.MeshStandardMaterial({ color: 0xe8b48c, roughness: 0.8 }));
-  pot.position.set(7.6, 0.21, -4.6); scene.add(pot);
-  const leafMat = new THREE.MeshStandardMaterial({ color: 0x2f7d4f, roughness: 0.9 });
-  for (let i = 0; i < 4; i++) {
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.95, 8), leafMat);
-    leaf.position.set(7.6 + (i - 1.5) * 0.14, 0.85, -4.6 + ((i % 2) - 0.5) * 0.16);
-    leaf.rotation.z = (i - 1.5) * 0.22; scene.add(leaf);
-  }
+  drawNetworkLines();
 
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 10),
     new THREE.MeshStandardMaterial({ color: 0x2c2c33 }));
@@ -1251,20 +1265,20 @@ function init3D() {
   }
   renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0xf2ecdf);
+  renderer.setClearColor(0xf0e9d8);
   /* Bayangan lembut, hanya desktop (shadowsOn) agar HP tidak berat. */
   renderer.shadowMap.enabled = shadowsOn;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xf2ecdf, 22, 40);
+  scene.fog = new THREE.Fog(0xf0e9d8, 22, 40);
   camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
   raycaster = new THREE.Raycaster();
   clk = new THREE.Clock();
   applyCamera();
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-  scene.add(new THREE.HemisphereLight(0xbfe3ff, 0xe8d9c0, 0.55));
-  const key = new THREE.DirectionalLight(0xfff2e0, 1.1); key.position.set(6, 9, 7); scene.add(key);
+  scene.add(new THREE.AmbientLight(0xfff6e8, 0.55));
+  scene.add(new THREE.HemisphereLight(0xcfe8ff, 0xe0cdb2, 0.5));
+  const key = new THREE.DirectionalLight(0xffe8c8, 1.1); key.position.set(6, 9, 7); scene.add(key);
   if (shadowsOn) {
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -1275,11 +1289,11 @@ function init3D() {
   }
   /* Lampu rim biru dingin dari belakang-kiri, supaya siluet figur tidak rata. */
   const rim = new THREE.DirectionalLight(0x9fd8ff, 0.35); rim.position.set(-7, 6, -6); scene.add(rim);
-  const warm = new THREE.PointLight(0xffd9a0, 0.4, 22); warm.position.set(0, 4.5, 1.5); scene.add(warm);
+  const warm = new THREE.PointLight(0xffd9a0, 0.5, 22); warm.position.set(0, 4.5, 1.5); scene.add(warm);
 
   buildRoom();
   ROSTER.forEach((cfg) => {
-    const r = buildHuman(cfg);
+    const r = buildVoxel(cfg);
     figures3D[cfg.id] = r; figureRoots.push(r); scene.add(r);
   });
 
