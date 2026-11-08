@@ -1,0 +1,6 @@
+# Mission Control (versi Vercel)
+node_modules/
+.env
+.env.local
+.vercel/
+*.log

@@ -128,9 +128,9 @@ details.sys summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:13px
 #gl-wrap{position:relative;width:100%;height:calc(100vh - var(--topbar-h) - 48px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#060607}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #gl:active{cursor:grabbing}
-#office-hud{position:absolute;top:12px;left:12px;background:rgba(13,13,15,.82);border:1px solid var(--border);border-radius:10px;padding:8px 13px;font-size:12.5px;color:var(--muted);pointer-events:none;backdrop-filter:blur(6px)}
+#office-hud{position:absolute;top:12px;left:12px;background:rgba(13,13,15,.72);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:8px 13px;font-size:12.5px;color:var(--muted);pointer-events:none;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.45)}
 #office-hud b{color:var(--text)}
-.office-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(13,13,15,.82);border:1px solid var(--border);border-radius:999px;padding:7px 16px;font-size:11.5px;color:var(--muted);pointer-events:none;white-space:nowrap;backdrop-filter:blur(6px)}
+.office-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(13,13,15,.72);border:1px solid rgba(255,255,255,.09);border-radius:999px;padding:7px 16px;font-size:11.5px;color:var(--muted);pointer-events:none;white-space:nowrap;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.45)}
 .gl-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);padding:30px;text-align:center}
 /* ---------- Responsive ---------- */
 @media (max-width:900px){
@@ -557,6 +557,9 @@ var lampMat, lampLight;
 var codeTex, codeCanvas, chartTex, chartCanvas, codeLines = [], chartPhase = 0;
 
 var orbit = { tx: 0, ty: 1.3, tz: 0.6, r: 12.5, theta: 0.55, phi: 1.02 };
+/* Kamera halus: orbit = target, orbitCur = posisi kamera yang dihaluskan tiap frame (sapuan pembuka dari jauh). */
+var orbitCur = { tx: 0, ty: 1.3, tz: 0.6, r: 16.5, theta: 1.15, phi: 1.18 };
+var shadowsOn = (typeof window !== "undefined" && window.innerWidth >= 900);
 var SEAT_X = [-4.2, -2.52, -0.84, 0.84, 2.52, 4.2];
 var BACK_X = [-5, -3, -1, 1, 3, 5];
 
@@ -688,6 +691,15 @@ function buildRobot(cfg) {
     kb.position.set(0, 1.32, 0.95); g.add(kb);
   }
 
+  /* Cincin status di lantai: warna aksen agent, berdenyut saat working, redup saat idle/paused. */
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.55, 0.74, 40),
+    new THREE.MeshBasicMaterial({ color: cfg.color, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.02; g.add(ring); P.ring = ring;
+  /* Bayangan: hanya di desktop (shadowsOn), agar HP tidak berat. */
+  if (shadowsOn) g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+
   g.userData = {
     agentId: cfg.id, parts: P, phase: Math.random() * Math.PI * 2,
     working: false, paused: false, hop: 0, hopT: 0,
@@ -769,8 +781,11 @@ function drawChart() {
 
 function buildRoom() {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
-    new THREE.MeshStandardMaterial({ color: 0x111114, roughness: 1 }));
-  floor.rotation.x = -Math.PI / 2; scene.add(floor);
+    new THREE.MeshStandardMaterial({ color: 0x141419, roughness: 0.55, metalness: 0.2 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = shadowsOn; scene.add(floor);
+  /* Grid lantai halus, memberi kesan mengkilap tanpa refleksi mahal. */
+  const grid = new THREE.GridHelper(26, 26, 0x2e3440, 0x1d2027);
+  grid.position.y = 0.01; grid.material.transparent = true; grid.material.opacity = 0.35; scene.add(grid);
 
   const wallMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0f, roughness: 1 });
   const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 9), wallMat);
@@ -789,7 +804,7 @@ function buildRoom() {
 
   const tableMat = new THREE.MeshStandardMaterial({ color: 0x1d1d22, roughness: 0.7 });
   const top = new THREE.Mesh(new THREE.BoxGeometry(11, 0.18, 2.6), tableMat);
-  top.position.set(0, 0.92, 0); scene.add(top);
+  top.position.set(0, 0.92, 0); top.castShadow = shadowsOn; top.receiveShadow = shadowsOn; scene.add(top);
   [[-5.2, -1.1], [5.2, -1.1], [-5.2, 1.1], [5.2, 1.1]].forEach(([lx, lz]) => {
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.92, 0.18), tableMat);
     leg.position.set(lx, 0.46, lz); scene.add(leg);
@@ -842,13 +857,19 @@ function buildRoom() {
 
 /* ---------- Orbit manual ---------- */
 function applyCamera() {
-  const sp = Math.sin(orbit.phi), r = orbit.r;
+  const sp = Math.sin(orbitCur.phi), r = orbitCur.r;
   camera.position.set(
-    orbit.tx + r * sp * Math.sin(orbit.theta),
-    orbit.ty + r * Math.cos(orbit.phi),
-    orbit.tz + r * sp * Math.cos(orbit.theta)
+    orbitCur.tx + r * sp * Math.sin(orbitCur.theta),
+    orbitCur.ty + r * Math.cos(orbitCur.phi),
+    orbitCur.tz + r * sp * Math.cos(orbitCur.theta)
   );
-  camera.lookAt(orbit.tx, orbit.ty, orbit.tz);
+  camera.lookAt(orbitCur.tx, orbitCur.ty, orbitCur.tz);
+}
+/* Haluskan kamera tiap frame menuju target orbit (drag/zoom terasa lembut, bukan lompat). */
+function smoothCamera(dt) {
+  const k = 1 - Math.exp(-6 * dt);
+  ["tx", "ty", "tz", "r", "theta", "phi"].forEach((key) => { orbitCur[key] += (orbit[key] - orbitCur[key]) * k; });
+  applyCamera();
 }
 function clampOrbit() {
   orbit.phi = Math.max(0.3, Math.min(1.45, orbit.phi));
@@ -918,6 +939,12 @@ function syncRobots() {
     else { r.userData.target.pos.set(BACK_X[idx], 0, 4.9); r.userData.target.rotY = 0; }
     if (r.userData.paused !== paused) { r.userData.paused = paused; refreshLabel(r, cfg); }
     r.userData.working = working;
+    /* Cincin status: aksen agent saat working, kuning saat paused, redup saat idle. */
+    if (r.userData.parts.ring) {
+      const ringMat = r.userData.parts.ring.material;
+      ringMat.color.setHex(paused ? 0xf59e0b : (working ? cfg.color : 0x3a3f4a));
+      ringMat.opacity = paused ? 0.5 : (working ? 0.85 : 0.3);
+    }
   });
   let col = 0x22c55e;
   if (state.dispatch_paused) col = 0xef4444;
@@ -937,6 +964,7 @@ function animate() {
   const dt = Math.min(clk.getDelta(), 0.05), t = clk.elapsedTime;
   if (!officeVisible()) return;
   const k = 1 - Math.exp(-4 * dt);
+  smoothCamera(dt);
 
   Object.keys(robots3D).forEach((id) => {
     const r = robots3D[id], u = r.userData, P = u.parts, tp = u.target;
@@ -951,6 +979,11 @@ function animate() {
     let yT = tp.pos.y + yOff;
     if (!u.working && !u.paused) yT += Math.sin(t * 1.6 + u.phase) * 0.03;
     r.position.y += (yT - r.position.y) * k;
+    /* Denyut cincin status saat working; diam saat idle/paused. */
+    if (P.ring) {
+      const pulse = u.working && !u.paused ? 1 + Math.sin(t * 3.5) * 0.07 : 1;
+      P.ring.scale.setScalar(pulse);
+    }
     let dr = tp.rotY - r.rotation.y;
     dr = Math.atan2(Math.sin(dr), Math.cos(dr));
     r.rotation.y += dr * k;
@@ -1026,6 +1059,9 @@ function init3D() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x060607);
+  /* Bayangan lembut, hanya desktop (shadowsOn) agar HP tidak berat. */
+  renderer.shadowMap.enabled = shadowsOn;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x060607, 22, 40);
   camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
@@ -1033,8 +1069,19 @@ function init3D() {
   clk = new THREE.Clock();
   applyCamera();
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-  const key = new THREE.DirectionalLight(0xfff2e0, 0.65); key.position.set(6, 9, 7); scene.add(key);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  scene.add(new THREE.HemisphereLight(0x8fb8ff, 0x1a1410, 0.35));
+  const key = new THREE.DirectionalLight(0xfff2e0, 0.9); key.position.set(6, 9, 7); scene.add(key);
+  if (shadowsOn) {
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.left = -12; key.shadow.camera.right = 12;
+    key.shadow.camera.top = 12; key.shadow.camera.bottom = -12;
+    key.shadow.camera.near = 1; key.shadow.camera.far = 30;
+    key.shadow.bias = -0.0005;
+  }
+  /* Lampu rim biru dingin dari belakang-kiri, supaya siluet robot tidak rata. */
+  const rim = new THREE.DirectionalLight(0x7dd3fc, 0.5); rim.position.set(-7, 6, -6); scene.add(rim);
   const warm = new THREE.PointLight(0xffd9a0, 0.5, 22); warm.position.set(0, 4.5, 1.5); scene.add(warm);
 
   buildRoom();
