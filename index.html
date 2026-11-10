@@ -557,9 +557,9 @@ var lampMat, lampLight;
 var fireLight = null, flameMats = []; // cahaya + lidah api perapian (v8)
 var codeTex, codeCanvas, chartTex, chartCanvas, codeLines = [], chartPhase = 0;
 
-var orbit = { tx: 0, ty: 1.3, tz: 1.6, r: 13.5, theta: 0.55, phi: 0.98 };
+var orbit = { tx: 0, ty: 1.3, tz: 1.6, r: 13.5, theta: 0.9, phi: 0.98 }; // v8.2: theta 0,55->0,9 supaya dinding perapian masuk frame default
 /* Kamera halus: orbit = target, orbitCur = posisi kamera yang dihaluskan tiap frame (sapuan pembuka dari jauh). */
-var orbitCur = { tx: 0, ty: 1.3, tz: 1.6, r: 16.5, theta: 1.15, phi: 1.18 };
+var orbitCur = { tx: 0, ty: 1.3, tz: 1.6, r: 16.5, theta: 1.35, phi: 1.18 }; // v8.2: sapuan pembuka ikut sudut baru
 var shadowsOn = (typeof window !== "undefined" && window.innerWidth >= 900);
 /* Layout kantor (v8 kabin kayu): 6 meja individual, 2 baris x 3 kolom.
    Baris depan (Anca, Mu, Cipu) dan baris belakang (Jaka, Tono, Dani)
@@ -610,7 +610,7 @@ function makeLabelSprite(name, role, cssColor, paused) {
   x.fillText(role, 128, 62);
   const tex = new THREE.CanvasTexture(c);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sp.scale.set(2.0, 0.75, 1); sp.position.y = 2.62;
+  sp.scale.set(1.7, 0.64, 1); sp.position.y = 2.85; // v8.2: label diperkecil + dinaikkan supaya tidak menutupi figur
   return sp;
 }
 function refreshLabel(r, cfg) {
@@ -731,10 +731,11 @@ function buildVoxel(cfg) {
     new THREE.MeshStandardMaterial({ color: 0xd9c9a8, roughness: 0.5 }));
   handMug.position.set(0, -0.56, 0.08); handMug.visible = false;
   P.armR.add(handMug); P.handMug = handMug;
-  /* Buku di depan dada — hanya terlihat saat kegiatan "read" (v8; v8.1 diperbesar supaya terbaca). */
+  /* Buku di depan dada — hanya terlihat saat kegiatan "read" (v8; v8.1 diperbesar supaya terbaca).
+     v8.2: buku dimiringkan ke atas + dinaikkan sedikit supaya tepinya mengintip di atas lengan. */
   const book = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, 0.3),
     new THREE.MeshStandardMaterial({ color: 0x8a5a2e, roughness: 0.6 }));
-  book.position.set(0, 1.16, 0.34); book.visible = false;
+  book.position.set(0, 1.2, 0.32); book.rotation.x = -0.5; book.visible = false;
   g.add(book); P.book = book;
 
   /* --- Aksesori per agent (semua kotak) --- */
@@ -887,10 +888,10 @@ function drawMountainTexture() {
   const c = document.createElement("canvas"); c.width = 512; c.height = 256;
   const x = c.getContext("2d");
   /* Senja pegunungan (v8 kabin): langit jingga-ungu + 2 lapis gunung + pinus.
-     v8.1: pita jingga digeser ke tengah langit (0.5-0.62) supaya terlihat
-     di atas siluet gunung, bukan tertutup di baliknya. */
+     v8.2: pita jingga diperlebar ke atas (0,38-0,68) supaya langit senja
+     lebih dominan daripada malam. */
   const gr = x.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, "#141c33"); gr.addColorStop(0.3, "#3a2f52"); gr.addColorStop(0.5, "#c96a4a"); gr.addColorStop(0.62, "#e8956b"); gr.addColorStop(0.75, "#7a4a3a"); gr.addColorStop(1, "#4a2a2a");
+  gr.addColorStop(0, "#1e2340"); gr.addColorStop(0.2, "#4a3560"); gr.addColorStop(0.38, "#b85a4a"); gr.addColorStop(0.52, "#e8956b"); gr.addColorStop(0.68, "#8a4a3a"); gr.addColorStop(1, "#4a2a2a");
   x.fillStyle = gr; x.fillRect(0, 0, 512, 256);
   x.fillStyle = "#f4f1de"; x.beginPath(); x.arc(440, 42, 14, 0, 7); x.fill(); // bulan
   for (let i = 0; i < 30; i++) { // bintang
@@ -1119,14 +1120,14 @@ function buildRoom() {
   const hearth = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 2.6), stoneMat);
   hearth.position.set(-11.8, 0.05, 5.5); scene.add(hearth);
   /* Api: 3 lidah emissive + cahaya oranye yang berkedip (di animate).
-     v8.1: lidah lebih besar/tinggi + lebih maju (x -11,78) + lebih lebar
-     di z supaya terlihat dari balik sandaran kursi (puncak lidah tengah
-     di atas sandaran, lidah luar mengintip di samping kursi). */
+     v8.2: lidah berbentuk KERUCUT meruncing seperti api sungguhan, warna
+     oranye lebih dalam + emissive lebih rendah (sebelumnya 2,2-3,0 ter-clip
+     jadi kuning pucat oleh tone mapping); cahaya api diperkuat. */
   flameMats = [];
-  [[0.2, 0.85, 0xff7a1a, 2.2], [0.16, 0.7, 0xffb020, 2.6], [0.14, 0.6, 0xffd34d, 3.0]].forEach(([w, h, col, em], fi) => {
+  [[0.16, 0.85, 0xff6a00, 1.3], [0.13, 0.7, 0xff9500, 1.5], [0.11, 0.6, 0xffb020, 1.7]].forEach(([fr, h, col, em], fi) => {
     const fm = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: em });
     flameMats.push(fm);
-    const fl = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), fm);
+    const fl = new THREE.Mesh(new THREE.ConeGeometry(fr, h, 8), fm);
     fl.position.set(-11.78, 0.55 + h / 2, 5.5 + (fi - 1) * 0.55); scene.add(fl);
   });
   const logMat = new THREE.MeshStandardMaterial({ color: 0x4a2f18, roughness: 0.9 });
@@ -1134,7 +1135,7 @@ function buildRoom() {
     const log = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.1), logMat);
     log.position.set(-11.88, 0.32, 5.5); log.rotation.x = rz; scene.add(log);
   });
-  fireLight = new THREE.PointLight(0xff7a1a, 1.3, 10); // v8.1: lebih terang + jangkauan lebih jauh
+  fireLight = new THREE.PointLight(0xff7a1a, 2.0, 12); // v8.2: lebih terang + jangkauan lebih jauh
   fireLight.position.set(-11.6, 1.1, 5.5); scene.add(fireLight);
   /* Jam kukuk di atas perapian (di depan permukaan cerobong, x -12,1). */
   const clockMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.7 });
@@ -1215,7 +1216,7 @@ function buildRoom() {
       new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
     capT.position.set(lx, 4.5, 2.5); scene.add(capT);
     const glow = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.26),
-      new THREE.MeshStandardMaterial({ color: 0xffc46b, emissive: 0xffb45e, emissiveIntensity: 2.2 }));
+      new THREE.MeshStandardMaterial({ color: 0xffb45e, emissive: 0xff8c1a, emissiveIntensity: 1.5 })); // v8.2: amber dalam, tidak ter-clip putih
     glow.position.set(lx, 4.3, 2.5); scene.add(glow);
     const capB = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.34),
       new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
@@ -1417,7 +1418,7 @@ function animate() {
       if (u.leisure) {
         if (u.spot && !u.spotArrived) { // masih berjalan: timer baru jalan setelah tiba
           u.walkT += dt;
-          if (u.walkT > 6) endLeisure(); // jalan terlalu lama: batalkan
+          if (u.walkT > 12) endLeisure(); // jalan terlalu lama: batalkan (v8.2: 6->12 dtk, pengaman perjalanan terjauh)
         } else {
           u.leisureT -= dt;
           if (u.leisureT <= 0) endLeisure();
@@ -1537,10 +1538,10 @@ function animate() {
 
   /* Api perapian berkedip (v8). */
   if (fireLight) {
-    fireLight.intensity = 1.3 + Math.sin(t * 7.3) * 0.25 + Math.sin(t * 13.7) * 0.12; // v8.1: dasar 1.3
+    fireLight.intensity = 2.0 + Math.sin(t * 7.3) * 0.35 + Math.sin(t * 13.7) * 0.18; // v8.2: dasar 2.0
   }
   flameMats.forEach((fm, fi) => {
-    fm.emissiveIntensity = (fi === 0 ? 2.2 : fi === 1 ? 2.6 : 3.0) * (0.9 + Math.sin(t * 9 + fi * 2.1) * 0.12);
+    fm.emissiveIntensity = (fi === 0 ? 1.3 : fi === 1 ? 1.5 : 1.7) * (0.9 + Math.sin(t * 9 + fi * 2.1) * 0.12); // v8.2: dasar 1,3/1,5/1,7
   });
 
   chartPhase += dt * 1.4; drawChart();
