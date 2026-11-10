@@ -715,6 +715,12 @@ function buildVoxel(cfg) {
   const legL = mkLeg(-1), legR = mkLeg(1);
   P.thighL = legL.thigh; P.kneeL = legL.knee; P.thighR = legR.thigh; P.kneeR = legR.knee;
 
+  /* Cangkir di tangan kanan — hanya terlihat saat kegiatan "sip" (v5.1). */
+  const handMug = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.12),
+    new THREE.MeshStandardMaterial({ color: 0xd9c9a8, roughness: 0.5 }));
+  handMug.position.set(0, -0.56, 0.08); handMug.visible = false;
+  P.armR.add(handMug); P.handMug = handMug;
+
   /* --- Aksesori per agent (semua kotak) --- */
   if (cfg.id === "Mu") {
     const beret = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.5),
@@ -805,6 +811,7 @@ function buildVoxel(cfg) {
   g.userData = {
     agentId: cfg.id, parts: P, phase: Math.random() * Math.PI * 2,
     working: false, paused: false, hop: 0, hopT: 0,
+    leisure: "", leisureT: 0, leisureNext: 2 + Math.random() * 4, chatRotY: 0,
     blinkT: 1 + Math.random() * 3, blinkUntil: 0, label: null,
     bubble: null, bubbleKey: "",
     target: { pos: new THREE.Vector3(deskOf(cfg).x, 0, deskOf(cfg).row.idleZ), rotY: 0 }
@@ -934,40 +941,6 @@ function drawWorldMapTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-/* ---------- Garis jaringan biru di lantai (gaya The Agency) ----------
-   Garis tipis dari tiap meja menuju hub di depan layar besar tengah. */
-/* ---------- Garis jaringan biru di lantai (gaya The Agency, v5 mode gelap) ----------
-   Dulu garis tipis THREE.Line (linewidth diabaikan WebGL, jadi samar) — kini
-   strip datar bercahaya: inti terang 0,14 + halo 0,42 di bawahnya, supaya
-   benar-benar terbaca di lantai gelap. Topologi sama: tiap meja → hub → layar. */
-function netStrip(a, b, width, color, opacity, y) {
-  const dx = b.x - a.x, dz = b.z - a.z;
-  const len = Math.hypot(dx, dz);
-  const m = new THREE.Mesh(new THREE.BoxGeometry(len, 0.012, width),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity }));
-  m.rotation.y = -Math.atan2(dz, dx);
-  m.position.set((a.x + b.x) / 2, y, (a.z + b.z) / 2);
-  scene.add(m);
-}
-function drawNetworkLines() {
-  const hub = new THREE.Vector3(0, 0, -4.6);
-  const nodeMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc });
-  const seg = (from, to) => {
-    netStrip(from, to, 0.42, 0x38bdf8, 0.28, 0.018);
-    netStrip(from, to, 0.14, 0x4dd2ff, 0.95, 0.026);
-  };
-  ROSTER.forEach((cfg) => {
-    const d = deskOf(cfg);
-    const from = new THREE.Vector3(d.x, 0, d.row.deskZ + 0.9);
-    seg(from, hub);
-    const node = new THREE.Mesh(new THREE.CircleGeometry(0.09, 16), nodeMat);
-    node.rotation.x = -Math.PI / 2; node.position.set(from.x, 0.03, from.z); scene.add(node);
-  });
-  const hubNode = new THREE.Mesh(new THREE.CircleGeometry(0.14, 16), nodeMat);
-  hubNode.rotation.x = -Math.PI / 2; hubNode.position.set(hub.x, 0.03, hub.z); scene.add(hubNode);
-  seg(hub, new THREE.Vector3(0, 0, -6.3));
-}
-
 function buildRoom() {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
     new THREE.MeshStandardMaterial({ map: drawFloorTexture(), roughness: 0.85, metalness: 0.0 }));
@@ -1067,10 +1040,12 @@ function buildRoom() {
       new THREE.MeshStandardMaterial({ color: 0xffc46b, emissive: 0xffb45e, emissiveIntensity: 1.8 }));
     lampShade.position.y = 0.32; lampGrp.add(lampShade);
     lampGrp.position.set(d.x + 0.85, 0.98, d.row.deskZ + 0.35); scene.add(lampGrp);
+    /* Cangkir kecil di sudut meja (properti kegiatan "sip" v5.1). */
+    const mug = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0xd9c9a8, roughness: 0.5 }));
+    mug.position.set(d.x - 0.85, 1.05, d.row.deskZ + 0.35); scene.add(mug);
   });
 
-
-  drawNetworkLines();
 
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 10),
     new THREE.MeshStandardMaterial({ color: 0x2c2c33 }));
@@ -1166,6 +1141,7 @@ function syncFigures() {
     refreshBubble(r, cfg, a, paused);
     if (r.userData.paused !== paused) { r.userData.paused = paused; refreshLabel(r, cfg); }
     r.userData.working = working;
+    if (working || paused) r.userData.leisure = ""; // kegiatan santai batal saat ada tugas/dijeda
     /* Cincin status: aksen agent saat working, kuning saat paused, redup saat idle. */
     if (r.userData.parts.ring) {
       const ringMat = r.userData.parts.ring.material;
@@ -1222,7 +1198,36 @@ function animate() {
       P.ring.scale.setScalar(pulse);
       P.ring.position.set(r.position.x, 0.02, r.position.z);
     }
-    let dr = tp.rotY - r.rotation.y;
+    /* ---------- Kegiatan santai saat idle (v5.1) ----------
+       Hanya saat idle (bukan working/paused): tiap beberapa detik figur
+       memilih satu kegiatan santai secara acak — meregang, minum kopi,
+       menoleh ke layar besar, mengobrol dengan tetangga — lalu kembali
+       diam. Saat ada tugas/dijeda, kegiatan langsung dibatalkan. */
+    if (!u.working && !u.paused) {
+      if (!u.leisure && t > (u.leisureNext || 0)) {
+        const acts = ["stretch", "sip", "look", "chat"];
+        u.leisure = acts[Math.floor(Math.random() * acts.length)];
+        u.leisureT = 2.5 + Math.random() * 2;
+        if (u.leisure === "chat") { // tetangga: kolom sebelah di baris yang sama
+          const idxL = ROSTER.findIndex((c) => c.id === id);
+          const rowL = idxL < 3 ? 0 : 1, colL = idxL % 3;
+          const nCol = colL < 2 ? colL + 1 : colL - 1;
+          u.chatRotY = DESK_X[rowL][nCol] > DESK_X[rowL][colL] ? Math.PI / 2 : -Math.PI / 2;
+        }
+      }
+      if (u.leisure) {
+        u.leisureT -= dt;
+        if (u.leisureT <= 0) { u.leisure = ""; u.leisureNext = t + 3 + Math.random() * 5; }
+      }
+    } else {
+      u.leisure = "";
+    }
+    if (P.handMug) P.handMug.visible = (u.leisure === "sip");
+    /* Kegiatan "look"/"chat": badan menghadap layar besar / tetangga sebelah. */
+    let rotT = tp.rotY;
+    if (u.leisure === "look") rotT = Math.PI;
+    else if (u.leisure === "chat") rotT = u.chatRotY || 0;
+    let dr = rotT - r.rotation.y;
     dr = Math.atan2(Math.sin(dr), Math.cos(dr));
     r.rotation.y += dr * k;
 
@@ -1238,6 +1243,7 @@ function animate() {
     }
 
     if (u.working && !u.paused) {
+      P.headG.rotation.x += (0 - P.headG.rotation.x) * k; // kembali tegak dari kegiatan santai
       if (id === "Dani" || id === "Anca") { // mengetik
         P.armR.rotation.x = -1.0 + Math.sin(t * 13) * 0.35;
         P.armL.rotation.x = -1.0 + Math.sin(t * 13 + 1.6) * 0.35;
@@ -1258,10 +1264,29 @@ function animate() {
         P.armR.rotation.z += (0 - P.armR.rotation.z) * k;
         relaxArm(P.armL, k);
       } else { relaxArm(P.armL, k); relaxArm(P.armR, k); }
+    } else if (u.leisure === "stretch") { // meregang: kedua tangan ke atas, kepala menengadah
+      P.armL.rotation.x += (-2.4 - P.armL.rotation.x) * k;
+      P.armR.rotation.x += (-2.4 - P.armR.rotation.x) * k;
+      P.armL.rotation.z += (-0.5 - P.armL.rotation.z) * k;
+      P.armR.rotation.z += (0.5 - P.armR.rotation.z) * k;
+      P.headG.rotation.x += (-0.28 - P.headG.rotation.x) * k;
+    } else if (u.leisure === "sip") { // minum kopi: tangan kanan terangkat ke mulut
+      P.armR.rotation.x += (-1.9 - P.armR.rotation.x) * k;
+      P.armR.rotation.z += (0 - P.armR.rotation.z) * k;
+      P.headG.rotation.x += (-0.15 - P.headG.rotation.x) * k;
+      relaxArm(P.armL, k);
+    } else if (u.leisure === "look") { // menoleh ke layar besar: kepala mendongak
+      P.headG.rotation.x += (-0.12 - P.headG.rotation.x) * k;
+      relaxArm(P.armL, k); relaxArm(P.armR, k);
+    } else if (u.leisure === "chat") { // mengobrol: mengangguk pelan
+      P.headG.position.y = 1.86 + Math.abs(Math.sin(t * 4)) * 0.05;
+      P.headG.rotation.x += (0 - P.headG.rotation.x) * k;
+      relaxArm(P.armL, k); relaxArm(P.armR, k);
     } else {
       relaxArm(P.armL, k); relaxArm(P.armR, k);
+      P.headG.rotation.x += (0 - P.headG.rotation.x) * k;
+      P.headG.position.y += (1.86 - P.headG.position.y) * k;
       if (id === "Cipu") {
-        P.headG.position.y += (1.86 - P.headG.position.y) * k;
         P.headG.rotation.z += (0 - P.headG.rotation.z) * k;
       }
       if (id === "Jaka" && P.lensG) {
