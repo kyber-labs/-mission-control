@@ -17,20 +17,20 @@ body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,
 a{color:var(--blue)}
 #app{display:flex;min-height:100vh}
 /* ---------- Sidebar ---------- */
-#sidebar{width:250px;flex-shrink:0;background:#0e1628;border-right:1px solid var(--border);padding:20px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px;z-index:60}
+#sidebar{width:250px;flex-shrink:0;background:#1e1409;border-right:1px solid var(--border);padding:20px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px;z-index:60}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 18px;font-weight:700;letter-spacing:.14em;font-size:13px}
-.brand-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#1b2947,#101a30);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px}
+.brand-mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#4a3220,#241a12);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px}
 .nav-btn{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:13.5px;cursor:pointer;text-align:left;transition:background .15s,color .15s}
-.nav-btn:hover{background:#16223c;color:var(--text)}
-.nav-btn.active{background:#1a2a4a;color:var(--text);font-weight:600}
+.nav-btn:hover{background:#33241a;color:var(--text)}
+.nav-btn.active{background:#3a2a1a;color:var(--text);font-weight:600}
 .nav-ico{width:20px;text-align:center;font-size:15px}
-.nav-badge{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#1a2a4a;color:var(--text);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.nav-badge{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#3a2a1a;color:var(--text);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .nav-badge.hot{background:rgba(245,158,11,.18);color:var(--yellow)}
 .side-foot{margin-top:auto;padding:12px 10px 4px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border)}
 #scrim{display:none}
 /* ---------- Main / topbar ---------- */
 #main{flex:1;min-width:0;display:flex;flex-direction:column}
-#topbar{height:var(--topbar-h);flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(11,17,32,.92);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
+#topbar{height:var(--topbar-h);flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(30,20,12,.92);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
 #burger{display:none;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;width:36px;height:36px;cursor:pointer}
 .tb-title{font-weight:700;letter-spacing:.16em;font-size:13px}
 .tb-right{margin-left:auto;display:flex;align-items:center;gap:12px}
@@ -47,8 +47,8 @@ a{color:var(--blue)}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:0 10px 28px rgba(0,0,0,.45)}
 .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
 .grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:10px;border:1px solid #2a3a5c;background:transparent;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
-.btn:hover{background:#16223c;border-color:#3a4f7d}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:10px;border:1px solid #6b4a2a;background:transparent;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.btn:hover{background:#33241a;border-color:#8a6238}
 .btn:disabled{opacity:.45;cursor:default}
 .btn-primary{background:#38bdf8;color:#081120;border-color:#38bdf8}
 .btn-primary:hover{background:#0ea5e9;border-color:#0ea5e9}
@@ -56,10 +56,10 @@ a{color:var(--blue)}
 .btn-danger-ghost.armed{background:rgba(239,68,68,.18);border-color:#b45353;color:#fca5a5}
 .pill{display:inline-flex;align-items:center;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .pill.working{background:rgba(56,189,248,.14);color:var(--blue);border:1px solid rgba(56,189,248,.35)}
-.pill.idle{background:#1a2a4a;color:var(--muted);border:1px solid var(--border)}
+.pill.idle{background:#3a2a1a;color:var(--muted);border:1px solid var(--border)}
 .pill.paused{background:rgba(245,158,11,.14);color:var(--yellow);border:1px solid rgba(245,158,11,.4)}
 .pill.on{background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.35)}
-.pill.off{background:#1a2a4a;color:var(--muted);border:1px solid var(--border)}
+.pill.off{background:#3a2a1a;color:var(--muted);border:1px solid var(--border)}
 .pill.online{background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.35)}
 .pill.offline{background:rgba(239,68,68,.14);color:var(--red);border:1px solid rgba(239,68,68,.4)}
 .empty{padding:44px 20px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:var(--radius);background:var(--card)}
@@ -67,12 +67,12 @@ a{color:var(--blue)}
 .empty-inline{color:var(--muted);font-size:13px;padding:6px 0}
 .muted{color:var(--muted)}
 .small{font-size:12.5px}
-.bar{height:8px;border-radius:5px;background:#1a2a4a;overflow:hidden;margin-top:8px}
+.bar{height:8px;border-radius:5px;background:#3a2a1a;overflow:hidden;margin-top:8px}
 .bar-fill{height:100%;border-radius:5px;background:var(--blue);transition:width .5s}
 .bar-fill.danger{background:var(--red)}
 .bar-fill.warn{background:var(--yellow)}
-.code-block{background:#0d1526;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:#c7d2e8;white-space:pre-wrap;word-break:break-word;margin:12px 0}
-#toast{position:fixed;top:calc(var(--topbar-h) + 12px);right:16px;z-index:200;background:#111a2e;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:10px;padding:12px 16px;font-size:13px;max-width:340px;display:none;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.code-block{background:#1e1409;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:#e8d9b8;white-space:pre-wrap;word-break:break-word;margin:12px 0}
+#toast{position:fixed;top:calc(var(--topbar-h) + 12px);right:16px;z-index:200;background:#241a12;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:10px;padding:12px 16px;font-size:13px;max-width:340px;display:none;box-shadow:0 12px 30px rgba(0,0,0,.5)}
 /* ---------- Agent cards ---------- */
 .agent-card{display:flex;flex-direction:column;gap:12px}
 .agent-head{display:flex;align-items:center;gap:12px}
@@ -80,17 +80,17 @@ a{color:var(--blue)}
 .agent-name{font-weight:700;font-size:15px}
 .agent-role{font-size:12.5px;color:var(--muted)}
 .agent-head .pill{margin-left:auto}
-.task-box{background:#0d1526;border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:58px}
+.task-box{background:#1e1409;border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:58px}
 .task-title{font-weight:600;font-size:13.5px}
 .task-meta{font-size:11.5px;color:var(--muted);margin-top:4px}
 /* ---------- Queue ---------- */
 .q-item{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border)}
 .q-item:last-child{border-bottom:0}
-.q-num{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#1a2a4a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;color:var(--muted)}
+.q-num{width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#3a2a1a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;color:var(--muted)}
 .q-prompt{flex:1;white-space:pre-wrap;word-break:break-word}
 .q-meta{font-size:11.5px;color:var(--muted);margin-top:6px}
 .q-form{display:flex;flex-direction:column;gap:12px}
-textarea,select,input[type=text]{background:#0d1526;border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 13px;font-size:13.5px;font-family:inherit;width:100%}
+textarea,select,input[type=text]{background:#1e1409;border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 13px;font-size:13.5px;font-family:inherit;width:100%}
 textarea{min-height:96px;resize:vertical}
 textarea:focus,select:focus{outline:none;border-color:#38bdf8}
 .quick-row{display:flex;flex-wrap:wrap;gap:8px}
@@ -117,15 +117,15 @@ details.sys summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:13px
 .token-empty h3{margin:0 0 10px;font-size:17px}
 .token-empty p{color:var(--muted);margin:8px 0}
 /* ---------- Fleet ---------- */
-.cap-list{margin:10px 0 0;padding-left:18px;color:#9fb0d0;font-size:13px}
+.cap-list{margin:10px 0 0;padding-left:18px;color:#c9b48a;font-size:13px}
 .cap-list li{margin:4px 0}
-.visual-note{margin-top:12px;padding:10px 12px;background:#0d1526;border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--muted)}
+.visual-note{margin-top:12px;padding:10px 12px;background:#1e1409;border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--muted)}
 /* ---------- Log ---------- */
 .log-list{display:flex;flex-direction:column;gap:2px}
-.log-line{padding:8px 12px;background:#0d1526;border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:#c7d2e8;word-break:break-word}
+.log-line{padding:8px 12px;background:#1e1409;border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:#e8d9b8;word-break:break-word}
 /* ---------- 3D office ---------- */
 #view-office{padding:0}
-#gl-wrap{position:relative;width:100%;height:calc(100vh - var(--topbar-h) - 48px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#0b1120}
+#gl-wrap{position:relative;width:100%;height:calc(100vh - var(--topbar-h) - 48px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#171009}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #gl:active{cursor:grabbing}
 #office-hud{position:absolute;top:12px;left:12px;background:rgba(30,20,12,.85);border:1px solid rgba(220,180,120,.18);border-radius:10px;padding:8px 13px;font-size:12.5px;color:var(--muted);pointer-events:none;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.45)}
@@ -583,7 +583,7 @@ function deskOf(cfg) {
    Kursi perapian (baca), jendela kanan (lihat pegunungan), karpet (duduk +
    minum). Satu titik hanya dipakai satu figur dalam satu waktu. */
 var LEISURE_SPOTS = {
-  read:   { x: -11.3, z: 5.5, y: -0.15, rotY: -Math.PI / 2 },
+  read:   { x: -11.0, z: 5.5, y: -0.15, rotY: -Math.PI / 2 }, // v8.1: ikut kursi yang digeser
   window: { x: 11.6, z: 0.5, y: 0, rotY: Math.PI / 2 },
   rug:    { x: 0.5, z: 4.6, y: -0.35, rotY: 0 }
 };
@@ -731,10 +731,10 @@ function buildVoxel(cfg) {
     new THREE.MeshStandardMaterial({ color: 0xd9c9a8, roughness: 0.5 }));
   handMug.position.set(0, -0.56, 0.08); handMug.visible = false;
   P.armR.add(handMug); P.handMug = handMug;
-  /* Buku kecil di depan dada — hanya terlihat saat kegiatan "read" (v8). */
-  const book = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.05, 0.24),
+  /* Buku di depan dada — hanya terlihat saat kegiatan "read" (v8; v8.1 diperbesar supaya terbaca). */
+  const book = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, 0.3),
     new THREE.MeshStandardMaterial({ color: 0x8a5a2e, roughness: 0.6 }));
-  book.position.set(0, 1.12, 0.3); book.visible = false;
+  book.position.set(0, 1.16, 0.34); book.visible = false;
   g.add(book); P.book = book;
 
   /* --- Aksesori per agent (semua kotak) --- */
@@ -886,9 +886,11 @@ function drawRugTexture() {
 function drawMountainTexture() {
   const c = document.createElement("canvas"); c.width = 512; c.height = 256;
   const x = c.getContext("2d");
-  /* Senja pegunungan (v8 kabin): langit jingga-ungu + 2 lapis gunung + pinus. */
+  /* Senja pegunungan (v8 kabin): langit jingga-ungu + 2 lapis gunung + pinus.
+     v8.1: pita jingga digeser ke tengah langit (0.5-0.62) supaya terlihat
+     di atas siluet gunung, bukan tertutup di baliknya. */
   const gr = x.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, "#1e2a4a"); gr.addColorStop(0.55, "#7a5a7a"); gr.addColorStop(1, "#e8956b");
+  gr.addColorStop(0, "#141c33"); gr.addColorStop(0.3, "#3a2f52"); gr.addColorStop(0.5, "#c96a4a"); gr.addColorStop(0.62, "#e8956b"); gr.addColorStop(0.75, "#7a4a3a"); gr.addColorStop(1, "#4a2a2a");
   x.fillStyle = gr; x.fillRect(0, 0, 512, 256);
   x.fillStyle = "#f4f1de"; x.beginPath(); x.arc(440, 42, 14, 0, 7); x.fill(); // bulan
   for (let i = 0; i < 30; i++) { // bintang
@@ -1117,26 +1119,31 @@ function buildRoom() {
   const hearth = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 2.6), stoneMat);
   hearth.position.set(-11.8, 0.05, 5.5); scene.add(hearth);
   /* Api: 3 lidah emissive + cahaya oranye yang berkedip (di animate).
-     Lidah + kayu di depan mulut firebox (x -11,88) supaya tidak tertutup. */
+     v8.1: lidah lebih besar/tinggi + lebih maju (x -11,78) + lebih lebar
+     di z supaya terlihat dari balik sandaran kursi (puncak lidah tengah
+     di atas sandaran, lidah luar mengintip di samping kursi). */
   flameMats = [];
-  [[0.16, 0.55, 0xff7a1a, 2.2], [0.12, 0.4, 0xffb020, 2.6], [0.1, 0.3, 0xffd34d, 3.0]].forEach(([w, h, col, em], fi) => {
+  [[0.2, 0.85, 0xff7a1a, 2.2], [0.16, 0.7, 0xffb020, 2.6], [0.14, 0.6, 0xffd34d, 3.0]].forEach(([w, h, col, em], fi) => {
     const fm = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: em });
     flameMats.push(fm);
     const fl = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), fm);
-    fl.position.set(-11.88, 0.55 + h / 2, 5.5 + (fi - 1) * 0.35); scene.add(fl);
+    fl.position.set(-11.78, 0.55 + h / 2, 5.5 + (fi - 1) * 0.55); scene.add(fl);
   });
   const logMat = new THREE.MeshStandardMaterial({ color: 0x4a2f18, roughness: 0.9 });
   [-0.5, 0.5].forEach((rz) => {
     const log = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.1), logMat);
     log.position.set(-11.88, 0.32, 5.5); log.rotation.x = rz; scene.add(log);
   });
-  fireLight = new THREE.PointLight(0xff7a1a, 0.9, 8);
+  fireLight = new THREE.PointLight(0xff7a1a, 1.3, 10); // v8.1: lebih terang + jangkauan lebih jauh
   fireLight.position.set(-11.6, 1.1, 5.5); scene.add(fireLight);
   /* Jam kukuk di atas perapian (di depan permukaan cerobong, x -12,1). */
   const clockMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.7 });
   const cuckoo = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.55), clockMat);
   cuckoo.position.set(-12.0, 2.9, 5.5); scene.add(cuckoo);
-  const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.17, 20),
+  /* v8.1: atap miring (piramida) supaya bentuk jam kukuk terbaca. */
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.28, 4), clockMat);
+  roof.position.set(-12.0, 3.39, 5.5); roof.rotation.y = Math.PI / 4; scene.add(roof);
+  const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.19, 20),
     new THREE.MeshStandardMaterial({ color: 0xf5e9d5, roughness: 0.4 }));
   clockFace.position.set(-11.89, 2.95, 5.5); clockFace.rotation.y = Math.PI / 2; scene.add(clockFace);
   const pend = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.35, 0.06), clockMat);
@@ -1152,7 +1159,7 @@ function buildRoom() {
     const aArm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.12), armMat);
     aArm.position.set(0, 0.78, az); armGrp.add(aArm);
   });
-  armGrp.position.set(-11.3, 0, 5.5); scene.add(armGrp);
+  armGrp.position.set(-11.0, 0, 5.5); scene.add(armGrp); // v8.1: digeser menjauh dari api supaya api terlihat
 
   /* Rak buku: rangka + 3 ambalan + buku warna-warni (di dinding belakang). */
   const shelfMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.7 });
@@ -1197,17 +1204,22 @@ function buildRoom() {
   buildPlant(12.2, 5.5);
   buildPlant(6.8, -6.2, 2.66);
 
-  /* Lentera gantung hangat (3, di atas koridor depan). */
+  /* Lentera gantung hangat (3, di atas koridor depan).
+     v8.1: sangkar diganti tutup atas + bawah saja supaya kotak lampu
+     emissive di tengahnya terlihat langsung (sebelumnya tertutup sangkar). */
   [-5, 0, 5].forEach((lx) => {
     const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 3.1, 6),
       new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.7 }));
     cord.position.set(lx, 5.95, 2.5); scene.add(cord);
-    const cage = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.36, 0.3),
+    const capT = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.34),
       new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
-    cage.position.set(lx, 4.3, 2.5); scene.add(cage);
-    const glow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.24, 0.2),
+    capT.position.set(lx, 4.5, 2.5); scene.add(capT);
+    const glow = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.26),
       new THREE.MeshStandardMaterial({ color: 0xffc46b, emissive: 0xffb45e, emissiveIntensity: 2.2 }));
     glow.position.set(lx, 4.3, 2.5); scene.add(glow);
+    const capB = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.34),
+      new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
+    capB.position.set(lx, 4.1, 2.5); scene.add(capB);
   });
 
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 10),
@@ -1384,9 +1396,9 @@ function animate() {
     if (!u.working && !u.paused) {
       if (!u.leisure && t > (u.leisureNext || 0)) {
         const acts = ["stretch", "sip", "look", "chat"];
-        ["read", "window", "rug"].forEach((sk) => { if (!spotTaken[sk]) acts.push(sk); });
+        ["read", "window", "rug"].forEach((sk) => { if (!spotTaken[sk]) acts.push(sk, sk); }); // v8.1: titik santai berbobot ganda
         u.leisure = acts[Math.floor(Math.random() * acts.length)];
-        u.leisureT = 2.5 + Math.random() * 2;
+        u.leisureT = LEISURE_SPOTS[u.leisure] ? 6 + Math.random() * 3 : 2.5 + Math.random() * 2; // v8.1: titik santai 6-9 dtk
         u.spot = null; u.spotLegs = []; u.spotArrived = false; u.sitting = false;
         if (u.leisure === "chat") { // tetangga: kolom sebelah di baris yang sama
           const idxL = ROSTER.findIndex((c) => c.id === id);
@@ -1498,7 +1510,7 @@ function animate() {
       P.armR.rotation.x += (-1.1 - P.armR.rotation.x) * k;
       P.armL.rotation.z += (0 - P.armL.rotation.z) * k;
       P.armR.rotation.z += (0 - P.armR.rotation.z) * k;
-      P.headG.rotation.x += (0.15 - P.headG.rotation.x) * k; // menunduk ke buku
+      P.headG.rotation.x += (0.25 - P.headG.rotation.x) * k; // menunduk ke buku (v8.1: lebih dalam)
     } else if (u.leisure === "window" && u.spotArrived) { // lihat pegunungan
       P.headG.rotation.x += (-0.12 - P.headG.rotation.x) * k;
       relaxArm(P.armL, k); relaxArm(P.armR, k);
@@ -1525,7 +1537,7 @@ function animate() {
 
   /* Api perapian berkedip (v8). */
   if (fireLight) {
-    fireLight.intensity = 0.85 + Math.sin(t * 7.3) * 0.15 + Math.sin(t * 13.7) * 0.08;
+    fireLight.intensity = 1.3 + Math.sin(t * 7.3) * 0.25 + Math.sin(t * 13.7) * 0.12; // v8.1: dasar 1.3
   }
   flameMats.forEach((fm, fi) => {
     fm.emissiveIntensity = (fi === 0 ? 2.2 : fi === 1 ? 2.6 : 3.0) * (0.9 + Math.sin(t * 9 + fi * 2.1) * 0.12);
