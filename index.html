@@ -289,6 +289,7 @@ async function poll() {
   } catch (e) { connected = false; }
   polling = false;
   renderChrome(); renderActive(); syncFigures();
+  if (typeof drawBoard === "function") drawBoard(); // proyektor live ikut tiap poll (v8.3)
 }
 
 function toast(msg) {
@@ -557,9 +558,9 @@ var lampMat, lampLight;
 var fireLight = null, flameMats = []; // cahaya + lidah api perapian (v8)
 var codeTex, codeCanvas, chartTex, chartCanvas, codeLines = [], chartPhase = 0;
 
-var orbit = { tx: 0, ty: 1.3, tz: 1.6, r: 13.5, theta: 0.9, phi: 0.98 }; // v8.2: theta 0,55->0,9 supaya dinding perapian masuk frame default
+var orbit = { tx: -1, ty: 1.3, tz: 1.6, r: 14, theta: 1.0, phi: 0.98 }; // v8.3: theta 0,9->1,0 + target x -1 + r 14 supaya seluruh perapian masuk frame
 /* Kamera halus: orbit = target, orbitCur = posisi kamera yang dihaluskan tiap frame (sapuan pembuka dari jauh). */
-var orbitCur = { tx: 0, ty: 1.3, tz: 1.6, r: 16.5, theta: 1.35, phi: 1.18 }; // v8.2: sapuan pembuka ikut sudut baru
+var orbitCur = { tx: -1, ty: 1.3, tz: 1.6, r: 16.5, theta: 1.45, phi: 1.18 }; // v8.3: sapuan pembuka ikut sudut baru
 var shadowsOn = (typeof window !== "undefined" && window.innerWidth >= 900);
 /* Layout kantor (v8 kabin kayu): 6 meja individual, 2 baris x 3 kolom.
    Baris depan (Anca, Mu, Cipu) dan baris belakang (Jaka, Tono, Dani)
@@ -604,13 +605,13 @@ function makeLabelSprite(name, role, cssColor, paused) {
   x.strokeStyle = paused ? "#9a9aa2" : cssColor; x.lineWidth = 3; rr(8, x, 240, 80, 16); x.stroke();
   x.textAlign = "center"; x.textBaseline = "middle";
   x.fillStyle = paused ? "#8b98b8" : "#f5e9d5";
-  x.font = "600 28px system-ui, sans-serif";
+  x.font = "600 32px system-ui, sans-serif"; // v8.3: huruf diperbesar mengimbangi label yang diperkecil
   x.fillText((paused ? "⏸ " : "") + name, 128, 30);
-  x.fillStyle = "#b09a7a"; x.font = "500 17px system-ui, sans-serif";
+  x.fillStyle = "#b09a7a"; x.font = "500 19px system-ui, sans-serif";
   x.fillText(role, 128, 62);
   const tex = new THREE.CanvasTexture(c);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sp.scale.set(1.7, 0.64, 1); sp.position.y = 2.85; // v8.2: label diperkecil + dinaikkan supaya tidak menutupi figur
+  sp.scale.set(1.45, 0.55, 1); sp.position.y = 3.0; // v8.3: label diperkecil lagi + dinaikkan supaya tidak menutupi figur
   return sp;
 }
 function refreshLabel(r, cfg) {
@@ -648,7 +649,7 @@ function makeBubbleSprite(text, cssColor) {
   x.beginPath(); x.moveTo(236, c.height - 16); x.lineTo(276, c.height - 16); x.lineTo(256, c.height - 2); x.closePath(); x.fill();
   const tex = new THREE.CanvasTexture(c);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-  sp.scale.set(2.2, 2.2 * c.height / 512, 1); sp.position.y = 3.45;
+  sp.scale.set(2.2, 2.2 * c.height / 512, 1); sp.position.y = 3.6; // v8.3: bubble naik mengikuti label
   return sp;
 }
 function refreshBubble(r, cfg, a, paused) {
@@ -732,10 +733,10 @@ function buildVoxel(cfg) {
   handMug.position.set(0, -0.56, 0.08); handMug.visible = false;
   P.armR.add(handMug); P.handMug = handMug;
   /* Buku di depan dada — hanya terlihat saat kegiatan "read" (v8; v8.1 diperbesar supaya terbaca).
-     v8.2: buku dimiringkan ke atas + dinaikkan sedikit supaya tepinya mengintip di atas lengan. */
-  const book = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, 0.3),
+     v8.3: buku diperbesar + dinaikkan + dimiringkan lebih tegak supaya mengintip di atas sandaran kursi. */
+  const book = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.35),
     new THREE.MeshStandardMaterial({ color: 0x8a5a2e, roughness: 0.6 }));
-  book.position.set(0, 1.2, 0.32); book.rotation.x = -0.5; book.visible = false;
+  book.position.set(0, 1.48, 0.3); book.rotation.x = -0.7; book.visible = false;
   g.add(book); P.book = book;
 
   /* --- Aksesori per agent (semua kotak) --- */
@@ -829,7 +830,7 @@ function buildVoxel(cfg) {
     agentId: cfg.id, parts: P, phase: Math.random() * Math.PI * 2,
     working: false, paused: false, hop: 0, hopT: 0,
     leisure: "", leisureT: 0, leisureNext: 2 + Math.random() * 4, chatRotY: 0,
-    spot: null, spotLegs: [], spotArrived: false, sitting: false, walkT: 0,
+    spot: null, spotLegs: [], spotArrived: false, sitting: false, walkT: 0, walkPhase: 0, moving: false, baseY: undefined,
     blinkT: 1 + Math.random() * 3, blinkUntil: 0, label: null,
     bubble: null, bubbleKey: "",
     target: { pos: new THREE.Vector3(deskOf(cfg).x, 0, deskOf(cfg).row.idleZ), rotY: 0 }
@@ -884,33 +885,59 @@ function drawRugTexture() {
   }
   return new THREE.CanvasTexture(c);
 }
-function drawMountainTexture() {
-  const c = document.createElement("canvas"); c.width = 512; c.height = 256;
-  const x = c.getContext("2d");
-  /* Senja pegunungan (v8 kabin): langit jingga-ungu + 2 lapis gunung + pinus.
-     v8.2: pita jingga diperlebar ke atas (0,38-0,68) supaya langit senja
-     lebih dominan daripada malam. */
+/* ---------- Pemandangan jendela HIDUP (v8.3) ----------
+   Bukan gambar diam: satu kanvas + tekstur dipakai kedua jendela, digambar
+   ulang tiap ~0,15 dtk di animate() — awan bergerak, burung lewat, bintang
+   berkelip, bulan bergeser pelan. */
+var winCanvas = null, winCtx = null, winTex = null, winLastDraw = 0;
+var winStars = [], winClouds = [];
+function initWindowTexture() {
+  winCanvas = document.createElement("canvas"); winCanvas.width = 512; winCanvas.height = 256;
+  winCtx = winCanvas.getContext("2d");
+  for (let i = 0; i < 30; i++) winStars.push({ x: Math.random() * 512, y: Math.random() * 90, s: 1 + Math.floor(Math.random() * 2), ph: Math.random() * 7 });
+  for (let i = 0; i < 4; i++) winClouds.push({ x: Math.random() * 512, y: 30 + i * 28 + Math.random() * 14, w: 70 + Math.random() * 60, v: 2 + Math.random() * 3, a: 0.08 + Math.random() * 0.07 });
+  winTex = new THREE.CanvasTexture(winCanvas);
+  drawWindowScene(0);
+}
+function drawWindowScene(t) {
+  const x = winCtx;
+  /* Langit senja (v8.3: atas sedikit lebih terang + gunung ungu-cokelat hangat). */
   const gr = x.createLinearGradient(0, 0, 0, 256);
-  gr.addColorStop(0, "#1e2340"); gr.addColorStop(0.2, "#4a3560"); gr.addColorStop(0.38, "#b85a4a"); gr.addColorStop(0.52, "#e8956b"); gr.addColorStop(0.68, "#8a4a3a"); gr.addColorStop(1, "#4a2a2a");
+  gr.addColorStop(0, "#2a2340"); gr.addColorStop(0.2, "#4a3560"); gr.addColorStop(0.38, "#b85a4a"); gr.addColorStop(0.52, "#e8956b"); gr.addColorStop(0.68, "#8a4a3a"); gr.addColorStop(1, "#4a2a2a");
   x.fillStyle = gr; x.fillRect(0, 0, 512, 256);
-  x.fillStyle = "#f4f1de"; x.beginPath(); x.arc(440, 42, 14, 0, 7); x.fill(); // bulan
-  for (let i = 0; i < 30; i++) { // bintang
-    x.fillStyle = "rgba(255,255,255," + (0.3 + Math.random() * 0.5) + ")";
-    x.fillRect(Math.random() * 512, Math.random() * 90, 2, 2);
-  }
+  /* Bulan bergeser pelan. */
+  const mx = 440 - ((t * 0.25) % 480);
+  x.fillStyle = "#f4f1de"; x.beginPath(); x.arc(mx, 42, 14, 0, 7); x.fill();
+  /* Bintang berkelip (posisi tetap, terang berubah). */
+  winStars.forEach((st) => {
+    x.fillStyle = "rgba(255,255,255," + (0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 2 + st.ph))) + ")";
+    x.fillRect(st.x, st.y, st.s, st.s);
+  });
+  /* Awan bergerak (elips lembut warna senja). */
+  winClouds.forEach((cl) => {
+    const cx = ((cl.x + t * cl.v) % 620) - 60;
+    x.fillStyle = "rgba(255,205,165," + cl.a + ")";
+    x.beginPath(); x.ellipse(cx, cl.y, cl.w / 2, cl.w / 5, 0, 0, 7); x.fill();
+    x.beginPath(); x.ellipse(cx + cl.w / 4, cl.y + 4, cl.w / 3, cl.w / 7, 0, 0, 7); x.fill();
+  });
+  /* Burung sesekali lewat (2 ekor, kecepatan beda). */
+  [[10, 74], [26, 108]].forEach(([off, by]) => {
+    const bx = ((t * 10 + off * 37) % 640) - 70;
+    x.strokeStyle = "rgba(30,20,30,0.85)"; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(bx - 7, by); x.lineTo(bx, by - 4); x.lineTo(bx + 7, by); x.stroke();
+  });
   const ridge = (color, peaks) => {
     x.fillStyle = color; x.beginPath(); x.moveTo(0, 256);
     peaks.forEach(([px, py]) => x.lineTo(px, py));
     x.lineTo(512, 256); x.closePath(); x.fill();
   };
-  ridge("#3a3a5e", [[0, 150], [80, 90], [160, 140], [260, 70], [340, 130], [430, 85], [512, 140]]);
-  ridge("#1e1e38", [[0, 190], [100, 120], [200, 175], [300, 110], [400, 170], [512, 125]]);
+  ridge("#4a3a55", [[0, 150], [80, 90], [160, 140], [260, 70], [340, 130], [430, 85], [512, 140]]);
+  ridge("#33283f", [[0, 190], [100, 120], [200, 175], [300, 110], [400, 170], [512, 125]]);
   for (let i = 0; i < 9; i++) { // pinus di kaki gunung
     const px = 20 + i * 56, ph = 26 + (i * 13) % 18;
-    x.fillStyle = "#14142a";
+    x.fillStyle = "#241a2e";
     x.beginPath(); x.moveTo(px, 256 - ph); x.lineTo(px - 9, 256); x.lineTo(px + 9, 256); x.closePath(); x.fill();
   }
-  return new THREE.CanvasTexture(c);
 }
 function initCodeMonitor() {
   codeCanvas = document.createElement("canvas"); codeCanvas.width = 320; codeCanvas.height = 200;
@@ -961,45 +988,63 @@ function drawChart() {
   wave("#38bdf8", 30, 2, chartPhase);
 }
 
-function drawWorldMapTexture() {
-  const c = document.createElement("canvas"); c.width = 512; c.height = 256;
-  const x = c.getContext("2d");
+/* ---------- Layar besar = proyektor live (v8.3) ----------
+   Bukan gambar peta statis: papan yang menampilkan kerja tiap agent secara
+   live dari data /api/state (poll 3 dtk) — siapa bekerja (judul tugas asli),
+   siapa menganggur, siapa dijeda. Digambar ulang tiap poll via drawBoard(). */
+var boardCanvas = null, boardCtx = null, boardTex = null;
+function initBoardTexture() {
+  boardCanvas = document.createElement("canvas"); boardCanvas.width = 512; boardCanvas.height = 256;
+  boardCtx = boardCanvas.getContext("2d");
+  boardTex = new THREE.CanvasTexture(boardCanvas);
+  drawBoard();
+}
+function drawBoard() {
+  if (!boardCtx) return;
+  const x = boardCtx;
   x.fillStyle = "#101827"; x.fillRect(0, 0, 512, 256);
-  /* Peta dunia titik-titik: gugus elips kasar per benua. */
-  const blobs = [
-    [110, 70, 60, 42], [180, 110, 42, 55], [300, 55, 78, 38], [330, 120, 45, 42],
-    [395, 75, 42, 30], [430, 140, 34, 26], [255, 150, 30, 20]
-  ];
-  x.fillStyle = "#38bdf8";
-  for (let gy = 12; gy < 200; gy += 9) for (let gx = 14; gx < 330; gx += 9) {
-    let inMap = false;
-    for (const b of blobs) {
-      const dx = (gx - b[0]) / b[2], dy = (gy - b[1]) / b[3];
-      if (dx * dx + dy * dy <= 1) { inMap = true; break; }
-    }
-    if (inMap) { x.globalAlpha = 0.55 + Math.random() * 0.45; x.fillRect(gx, gy, 5, 5); }
+  const agents = (typeof state !== "undefined" && state && Array.isArray(state.agents)) ? state.agents : [];
+  const now = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Jakarta" });
+  /* Header. */
+  x.fillStyle = "#f5e9d5"; x.font = "700 22px system-ui, sans-serif"; x.textAlign = "left"; x.textBaseline = "middle";
+  x.fillText("MISSION CONTROL — LIVE", 16, 24);
+  x.fillStyle = "#b09a7a"; x.font = "500 16px system-ui, sans-serif"; x.textAlign = "right";
+  x.fillText(now + " WIB", 496, 24);
+  x.strokeStyle = "rgba(220,180,120,0.25)"; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(16, 40); x.lineTo(496, 40); x.stroke();
+  if (!agents.length) {
+    x.fillStyle = "#b09a7a"; x.font = "500 18px system-ui, sans-serif"; x.textAlign = "center";
+    x.fillText("Memuat data live…", 256, 140);
+  } else {
+    agents.forEach((a, i) => {
+      const y = 62 + i * 31;
+      const cfg = (typeof ROSTER !== "undefined" ? ROSTER.find((c) => c.id === a.id) : null) || { css: "#8b98b8" };
+      const paused = !!(a.paused || (typeof effPaused === "function" && effPaused(a)));
+      const st = paused ? "DIJEDA" : (a.status === "working" ? "BEKERJA" : "MENGGANGGUR");
+      const stCol = paused ? "#f59e0b" : (a.status === "working" ? "#34d399" : "#b09a7a");
+      /* Titik status warna agent. */
+      x.fillStyle = cfg.css; x.beginPath(); x.arc(26, y, 7, 0, 7); x.fill();
+      /* Nama. */
+      x.fillStyle = "#f5e9d5"; x.font = "700 19px system-ui, sans-serif"; x.textAlign = "left";
+      x.fillText(a.id || "?", 42, y);
+      /* Status. */
+      x.fillStyle = stCol; x.font = "700 14px system-ui, sans-serif";
+      x.fillText(st, 130, y);
+      /* Judul tugas asli / menganggur. */
+      const title = (a.status === "working" && a.task && a.task.title) ? String(a.task.title) : (paused ? "dijeda" : "menganggur");
+      x.fillStyle = "#c7d2e8"; x.font = "500 16px system-ui, sans-serif";
+      let tt = title;
+      while (tt.length > 1 && x.measureText(tt).width > 240) tt = tt.slice(0, -1);
+      if (tt.length < title.length) tt = tt.slice(0, -1) + "…";
+      x.fillText(tt, 250, y);
+    });
   }
-  x.globalAlpha = 1;
-  /* Grafik batang kiri bawah. */
-  const bars = [18, 30, 24, 42, 36, 50, 44];
-  bars.forEach((h, i) => {
-    x.fillStyle = "rgba(56,189,248,0.85)";
-    x.fillRect(20 + i * 18, 232 - h, 11, h);
-  });
-  /* Grafik garis kanan bawah. */
-  x.strokeStyle = "#34d399"; x.lineWidth = 2; x.beginPath();
-  const pts = [[360, 225], [385, 205], [410, 215], [435, 190], [460, 200], [485, 180]];
-  pts.forEach((p, i) => { i === 0 ? x.moveTo(p[0], p[1]) : x.lineTo(p[0], p[1]); });
-  x.stroke();
-  /* Bilah stat kanan atas. */
-  for (let i = 0; i < 4; i++) {
-    x.fillStyle = "rgba(56,189,248,0.35)"; x.fillRect(360, 22 + i * 16, 110, 7);
-    x.fillStyle = "#38bdf8"; x.fillRect(360, 22 + i * 16, 40 + i * 18, 7);
-  }
-  return new THREE.CanvasTexture(c);
+  if (boardTex) boardTex.needsUpdate = true;
 }
 
 function buildRoom() {
+  if (!winTex) initWindowTexture();
+  if (!boardTex) initBoardTexture();
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
     new THREE.MeshStandardMaterial({ map: drawFloorTexture(), roughness: 0.85, metalness: 0.0 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = shadowsOn; scene.add(floor);
@@ -1021,12 +1066,12 @@ function buildRoom() {
     baseS.position.set(12.94 * s, 0.15, 0); scene.add(baseS);
   });
 
-  /* Layar besar di dinding tengah (gaya The Agency): peta dunia + grafik. */
+  /* Layar besar di dinding tengah (gaya The Agency): proyektor live (v8.3). */
   const screenFrame = new THREE.Mesh(new THREE.BoxGeometry(8.6, 4.6, 0.1),
     new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
   screenFrame.position.set(0, 3.4, -6.46); scene.add(screenFrame);
   const bigScreen = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 4.2),
-    new THREE.MeshBasicMaterial({ map: drawWorldMapTexture() }));
+    new THREE.MeshBasicMaterial({ map: boardTex }));
   bigScreen.position.set(0, 3.4, -6.4); scene.add(bigScreen);
 
   /* Jendela kedua di dinding kiri (pegunungan senja). */
@@ -1034,7 +1079,7 @@ function buildRoom() {
     new THREE.MeshStandardMaterial({ color: 0x4a3220, roughness: 0.8 }));
   win2Frame.position.set(-12.97, 3.2, 0); win2Frame.rotation.y = Math.PI / 2; scene.add(win2Frame);
   const win2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 3.4),
-    new THREE.MeshBasicMaterial({ map: drawMountainTexture() }));
+    new THREE.MeshBasicMaterial({ map: winTex }));
   win2.position.set(-12.94, 3.2, 0); win2.rotation.y = Math.PI / 2; scene.add(win2);
 
   /* Jendela ketiga di dinding kanan (pegunungan senja). */
@@ -1042,7 +1087,7 @@ function buildRoom() {
     new THREE.MeshStandardMaterial({ color: 0x4a3220, roughness: 0.8 }));
   win3Frame.position.set(12.97, 3.2, 0); win3Frame.rotation.y = -Math.PI / 2; scene.add(win3Frame);
   const win3 = new THREE.Mesh(new THREE.PlaneGeometry(8, 3.4),
-    new THREE.MeshBasicMaterial({ map: drawMountainTexture() }));
+    new THREE.MeshBasicMaterial({ map: winTex }));
   win3.position.set(12.94, 3.2, 0); win3.rotation.y = -Math.PI / 2; scene.add(win3);
 
 
@@ -1120,12 +1165,12 @@ function buildRoom() {
   const hearth = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 2.6), stoneMat);
   hearth.position.set(-11.8, 0.05, 5.5); scene.add(hearth);
   /* Api: 3 lidah emissive + cahaya oranye yang berkedip (di animate).
-     v8.2: lidah berbentuk KERUCUT meruncing seperti api sungguhan, warna
-     oranye lebih dalam + emissive lebih rendah (sebelumnya 2,2-3,0 ter-clip
-     jadi kuning pucat oleh tone mapping); cahaya api diperkuat. */
+     v8.3: lidah lebih TINGGI (puncak 1,65/1,45/1,35 — melewati sandaran
+     kursi 1,375) + warna DASAR gelap supaya yang bersinar hanya emissive
+     oranye (sebelumnya warna dasar terang ikut tersorot lampu jadi putih). */
   flameMats = [];
-  [[0.16, 0.85, 0xff6a00, 1.3], [0.13, 0.7, 0xff9500, 1.5], [0.11, 0.6, 0xffb020, 1.7]].forEach(([fr, h, col, em], fi) => {
-    const fm = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: em });
+  [[0.17, 1.1, 0xff6a00, 0x7a1a00, 1.3], [0.14, 0.9, 0xff9500, 0x7a2a00, 1.5], [0.12, 0.8, 0xffb020, 0x7a3a00, 1.7]].forEach(([fr, h, col, base, em], fi) => {
+    const fm = new THREE.MeshStandardMaterial({ color: base, emissive: col, emissiveIntensity: em });
     flameMats.push(fm);
     const fl = new THREE.Mesh(new THREE.ConeGeometry(fr, h, 8), fm);
     fl.position.set(-11.78, 0.55 + h / 2, 5.5 + (fi - 1) * 0.55); scene.add(fl);
@@ -1135,8 +1180,8 @@ function buildRoom() {
     const log = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 1.1), logMat);
     log.position.set(-11.88, 0.32, 5.5); log.rotation.x = rz; scene.add(log);
   });
-  fireLight = new THREE.PointLight(0xff7a1a, 2.0, 12); // v8.2: lebih terang + jangkauan lebih jauh
-  fireLight.position.set(-11.6, 1.1, 5.5); scene.add(fireLight);
+  fireLight = new THREE.PointLight(0xff7a1a, 1.5, 12); // v8.3: digeser maju (x -11,6->-11,0) + diredupkan supaya menyorot batu/lantai tanpa 'membakar' api
+  fireLight.position.set(-11.0, 1.2, 5.5); scene.add(fireLight);
   /* Jam kukuk di atas perapian (di depan permukaan cerobong, x -12,1). */
   const clockMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.7 });
   const cuckoo = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.55), clockMat);
@@ -1216,7 +1261,7 @@ function buildRoom() {
       new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
     capT.position.set(lx, 4.5, 2.5); scene.add(capT);
     const glow = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.26),
-      new THREE.MeshStandardMaterial({ color: 0xffb45e, emissive: 0xff8c1a, emissiveIntensity: 1.5 })); // v8.2: amber dalam, tidak ter-clip putih
+      new THREE.MeshStandardMaterial({ color: 0x3a1c00, emissive: 0xff8c1a, emissiveIntensity: 1.5 })); // v8.3: warna dasar gelap supaya amber-nya yang bersinar, bukan putih
     glow.position.set(lx, 4.3, 2.5); scene.add(glow);
     const capB = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.34),
       new THREE.MeshStandardMaterial({ color: 0x2c2c33, roughness: 0.6 }));
@@ -1312,6 +1357,7 @@ function syncFigures() {
     const paused = !!(a && (a.paused || (state.paused_agents && state.paused_agents[cfg.id])));
     const working = !paused && !!a && a.status === "working";
     const d = deskOf(cfg);
+    const hadSpot = !!r.userData.spot;
     if (working) { r.userData.target.pos.set(d.x, -0.15, d.row.seatZ); r.userData.target.rotY = Math.PI; }
     else if (!r.userData.spot) { // di titik santai: posisi diatur animate(), bukan di sini
       r.userData.target.pos.set(d.x, 0, d.row.idleZ); r.userData.target.rotY = 0;
@@ -1323,6 +1369,15 @@ function syncFigures() {
       if (r.userData.spot) { spotTaken[r.userData.spot] = null; r.userData.spot = null; }
       r.userData.spotLegs = []; r.userData.spotArrived = false; r.userData.sitting = false;
       r.userData.leisure = "";
+    }
+    /* Tugas datang saat figur di titik santai: pulang lewat koridor (v8.3),
+       bukan garis lurus menembus meja (target kursi sudah diset di atas,
+       diganti rute koridor di sini). */
+    if (working && hadSpot) {
+      r.userData.spot = "return";
+      r.userData.returnTo = { x: d.x, y: -0.15, z: d.row.seatZ, rotY: Math.PI };
+      r.userData.spotLegs = [{ x: r.position.x, z: 5.2 }, { x: d.x, z: 5.2 }];
+      r.userData.walkT = 0;
     }
     /* Cincin status: aksen agent saat working, kuning saat paused, redup saat idle. */
     if (r.userData.parts.ring) {
@@ -1353,8 +1408,21 @@ function animate() {
 
   Object.keys(figures3D).forEach((id) => {
     const r = figures3D[id], u = r.userData, P = u.parts, tp = u.target;
-    r.position.x += (tp.pos.x - r.position.x) * k;
-    r.position.z += (tp.pos.z - r.position.z) * k;
+    /* Jalan: KECEPATAN TETAP (v8.3) — figur benar-benar berjalan, bukan
+       meluncur. Sebelumnya lerp eksponensial menutup ~63% jarak dalam
+       0,25 dtk (ngebut di awal lalu merayap) — itulah 'geser cepat'. */
+    const WALK_SPEED = 2.2;
+    const mdx = tp.pos.x - r.position.x, mdz = tp.pos.z - r.position.z;
+    const mdist = Math.hypot(mdx, mdz);
+    if (mdist > 0.08 && !u.paused) {
+      const mv = Math.min(WALK_SPEED * dt, mdist);
+      r.position.x += (mdx / mdist) * mv;
+      r.position.z += (mdz / mdist) * mv;
+      u.moving = true;
+      u.walkPhase += dt * 6.2; // ~2 langkah/detik pada kecepatan jalan ini
+    } else {
+      u.moving = false;
+    }
     let yOff = 0;
     if (u.hop > 0) {
       u.hopT += dt; const hd = 0.55;
@@ -1362,16 +1430,29 @@ function animate() {
       if (u.hopT >= hd) { u.hopT = 0; u.hop--; }
     }
     let yT = tp.pos.y + yOff;
-    if (!u.working && !u.paused && !u.sitting) yT += Math.sin(t * 1.6 + u.phase) * 0.03;
-    r.position.y += (yT - r.position.y) * k;
-    /* Kaki: duduk (paha ke depan, betis tegak) saat working atau duduk santai. */
+    if (!u.working && !u.paused && !u.sitting && !u.moving) yT += Math.sin(t * 1.6 + u.phase) * 0.03;
+    if (u.baseY === undefined) u.baseY = r.position.y;
+    u.baseY += (yT - u.baseY) * k;
+    /* Hentakan langkah: ditambah langsung ke posisi (bukan lewat lerp)
+       supaya tidak dilemahkan filter dan tidak mengangkat figur. */
+    r.position.y = u.baseY + ((u.moving && !u.sitting) ? Math.abs(Math.sin(u.walkPhase)) * 0.05 : 0);
+    /* Kaki (v8.3): 3 keadaan — duduk (sudah tiba di kursi / duduk santai)
+       = terlipat; berjalan = melangkah bergantian (paha ayun ±0,55 + lutut
+       menekuk); diam = lurus. Catatan: working yang masih berjalan ke kursi
+       kakinya melangkah dulu, baru terlipat saat tiba. */
     if (P.thighL) {
-      const legT = (u.working || u.sitting) ? -1.35 : 0;
-      P.thighL.rotation.x += (legT - P.thighL.rotation.x) * k;
-      P.thighR.rotation.x += (legT - P.thighR.rotation.x) * k;
-      const kneeT = (u.working || u.sitting) ? 1.35 : 0;
-      P.kneeL.rotation.x += (kneeT - P.kneeL.rotation.x) * k;
-      P.kneeR.rotation.x += (kneeT - P.kneeR.rotation.x) * k;
+      let legL = 0, legR = 0, kneeL = 0, kneeR = 0;
+      if ((u.working && !u.moving) || u.sitting) { legL = legR = -1.35; kneeL = kneeR = 1.35; }
+      else if (u.moving) {
+        const s = Math.sin(u.walkPhase);
+        legL = s * 0.55; legR = -s * 0.55;
+        kneeL = Math.max(0, -s) * 0.7; kneeR = Math.max(0, s) * 0.7;
+      }
+      const lk = u.moving ? 1 - Math.exp(-10 * dt) : k; // lerp cepat saat melangkah supaya ayunan tidak dilemahkan
+      P.thighL.rotation.x += (legL - P.thighL.rotation.x) * lk;
+      P.thighR.rotation.x += (legR - P.thighR.rotation.x) * lk;
+      P.kneeL.rotation.x += (kneeL - P.kneeL.rotation.x) * lk;
+      P.kneeR.rotation.x += (kneeR - P.kneeR.rotation.x) * lk;
     }
     /* Cincin status: tetap di lantai mengikuti x/z figur (bukan anak grup),
        berdenyut saat working; diam saat idle/paused. */
@@ -1386,20 +1467,30 @@ function animate() {
        karpet (duduk + minum) — figur BERJALAN ke titik lewat koridor
        depan (z 5,2) supaya tidak menembus meja, lalu kembali ke meja
        saat kegiatan selesai / ada tugas / dijeda. */
-    const endLeisure = () => { // bebaskan titik + kembalikan target ke meja
+    const endLeisure = () => { // bebaskan titik + kembalikan ke meja LEWAT KORIDOR (v8.3: jalan pelan, jadi rute pulang lurus akan menembus meja)
       if (u.spot) { spotTaken[u.spot] = null; u.spot = null; }
       u.spotLegs = []; u.spotArrived = false; u.sitting = false;
       u.leisure = ""; u.leisureNext = t + 3 + Math.random() * 5;
       const cfgE = ROSTER.find((c) => c.id === id), dE = deskOf(cfgE);
-      if (u.working) { tp.pos.set(dE.x, -0.15, dE.row.seatZ); tp.rotY = Math.PI; }
-      else { tp.pos.set(dE.x, 0, dE.row.idleZ); tp.rotY = 0; }
+      const destY = u.working ? -0.15 : 0;
+      const destZ = u.working ? dE.row.seatZ : dE.row.idleZ;
+      const destRot = u.working ? Math.PI : 0;
+      const homeDist = Math.hypot(dE.x - r.position.x, destZ - r.position.z);
+      if (homeDist > 1) { // pulang lewat koridor depan (z 5,2): kaki 1 ke koridor, kaki 2 ke kolom meja
+        u.spot = "return";
+        u.returnTo = { x: dE.x, y: destY, z: destZ, rotY: destRot };
+        u.spotLegs = [{ x: r.position.x, z: 5.2 }, { x: dE.x, z: 5.2 }];
+        u.walkT = 0;
+      } else {
+        tp.pos.set(dE.x, destY, destZ); tp.rotY = destRot;
+      }
     };
     if (!u.working && !u.paused) {
       if (!u.leisure && t > (u.leisureNext || 0)) {
         const acts = ["stretch", "sip", "look", "chat"];
         ["read", "window", "rug"].forEach((sk) => { if (!spotTaken[sk]) acts.push(sk, sk); }); // v8.1: titik santai berbobot ganda
         u.leisure = acts[Math.floor(Math.random() * acts.length)];
-        u.leisureT = LEISURE_SPOTS[u.leisure] ? 6 + Math.random() * 3 : 2.5 + Math.random() * 2; // v8.1: titik santai 6-9 dtk
+        u.leisureT = LEISURE_SPOTS[u.leisure] ? 8 + Math.random() * 4 : 2.5 + Math.random() * 2; // v8.3: titik santai 8-12 dtk
         u.spot = null; u.spotLegs = []; u.spotArrived = false; u.sitting = false;
         if (u.leisure === "chat") { // tetangga: kolom sebelah di baris yang sama
           const idxL = ROSTER.findIndex((c) => c.id === id);
@@ -1418,7 +1509,7 @@ function animate() {
       if (u.leisure) {
         if (u.spot && !u.spotArrived) { // masih berjalan: timer baru jalan setelah tiba
           u.walkT += dt;
-          if (u.walkT > 12) endLeisure(); // jalan terlalu lama: batalkan (v8.2: 6->12 dtk, pengaman perjalanan terjauh)
+          if (u.walkT > 20) endLeisure(); // jalan terlalu lama: batalkan (v8.3: 12->20 dtk, jalan pelan butuh waktu lebih lama)
         } else {
           u.leisureT -= dt;
           if (u.leisureT <= 0) endLeisure();
@@ -1441,9 +1532,14 @@ function animate() {
         if (Math.hypot(dxl, dzl) < 0.35) {
           u.spotLegs.shift();
           if (!u.spotLegs.length) {
-            const sp = LEISURE_SPOTS[u.spot];
-            u.spotArrived = true;
-            tp.pos.set(sp.x, sp.y, sp.z); tp.rotY = sp.rotY;
+            if (u.spot === "return") { // pulang: sampai di kolom meja, lanjut ke kursi/idle
+              u.spotArrived = true; u.spot = null;
+              if (u.returnTo) { tp.pos.set(u.returnTo.x, u.returnTo.y, u.returnTo.z); tp.rotY = u.returnTo.rotY; u.returnTo = null; }
+            } else {
+              const sp = LEISURE_SPOTS[u.spot];
+              u.spotArrived = true;
+              tp.pos.set(sp.x, sp.y, sp.z); tp.rotY = sp.rotY;
+            }
           }
         }
       }
@@ -1534,17 +1630,29 @@ function animate() {
     if (id === "Cipu" && P.recMat) {
       P.recMat.emissiveIntensity = (u.working && !u.paused) ? (Math.sin(t * 9) > 0 ? 2.2 : 0.25) : 0.6;
     }
+    /* Ayun lengan saat berjalan (v8.3): menimpa pose lengan sesudah pose
+       di atas, supaya lengan tidak kaku saat melangkah; berhenti saat tiba. */
+    if (u.moving && !u.sitting && P.armL && P.armR) {
+      const ws = Math.sin(u.walkPhase);
+      const ak = 1 - Math.exp(-10 * dt);
+      P.armL.rotation.x += (-ws * 0.35 - P.armL.rotation.x) * ak;
+      P.armR.rotation.x += (ws * 0.35 - P.armR.rotation.x) * ak;
+      P.armL.rotation.z += (0 - P.armL.rotation.z) * ak;
+      P.armR.rotation.z += (0 - P.armR.rotation.z) * ak;
+    }
   });
 
   /* Api perapian berkedip (v8). */
   if (fireLight) {
-    fireLight.intensity = 2.0 + Math.sin(t * 7.3) * 0.35 + Math.sin(t * 13.7) * 0.18; // v8.2: dasar 2.0
+    fireLight.intensity = 1.5 + Math.sin(t * 7.3) * 0.3 + Math.sin(t * 13.7) * 0.15; // v8.3: dasar 1.5
   }
   flameMats.forEach((fm, fi) => {
     fm.emissiveIntensity = (fi === 0 ? 1.3 : fi === 1 ? 1.5 : 1.7) * (0.9 + Math.sin(t * 9 + fi * 2.1) * 0.12); // v8.2: dasar 1,3/1,5/1,7
   });
 
   chartPhase += dt * 1.4; drawChart();
+  /* Jendela hidup: gambar ulang pemandangan tiap ~0,15 dtk (v8.3). */
+  if (winTex && t - winLastDraw > 0.15) { winLastDraw = t; drawWindowScene(t); winTex.needsUpdate = true; }
   renderer.render(scene, camera);
 }
 
